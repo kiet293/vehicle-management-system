@@ -14,23 +14,23 @@ spring:
         - id: user-service-users
           uri: ${USER_SERVICE_URL:http://user-service:8081}
           predicates:
-            - Path=/api/users/**
+            - Path=/api/users/**, /api/v1/users/**
         - id: vehicle-service
           uri: ${VEHICLE_SERVICE_URL:http://vehicle-service:8082}
           predicates:
-            - Path=/api/vehicles/**
+            - Path=/api/vehicles/**, /api/v1/vehicles/**
         - id: cost-service
           uri: ${COST_SERVICE_URL:http://cost-service:8083}
           predicates:
-            - Path=/api/costs/**
+            - Path=/api/costs/**, /api/v1/costs/**
         - id: email-service
           uri: ${EMAIL_SERVICE_URL:http://email-service:8084}
           predicates:
-            - Path=/api/email/**
+            - Path=/api/email/**, /api/emails/**, /api/v1/emails/**
         - id: report-service
           uri: ${REPORT_SERVICE_URL:http://report-service:8085}
           predicates:
-            - Path=/api/reports/**
+            - Path=/api/reports/**, /api/v1/reports/**
       globalcors:
         cors-configurations:
           '[/**]':
