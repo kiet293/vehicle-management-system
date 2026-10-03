@@ -1,336 +1,262 @@
-# TÀI LIỆU YÊU CẦU SẢN PHẨM (PRODUCT REQUIREMENTS DOCUMENT - PRD)
+# Product Requirements Document (PRD)
 
-# DỰ ÁN: HỆ THỐNG QUẢN LÝ ĐỘI XE DOANH NGHIỆP (VEHICLE MANAGEMENT SYSTEM - VMS)
-
-* **Môn học:** Điện toán đám mây & Kiến trúc Microservices
-* **Kiến trúc:** Microservices Architecture (Spring Boot 3 + React TypeScript + MySQL + Docker)
-* **Mục tiêu triển khai:** Máy chủ ảo đám mây (Cloud VPS - Ubuntu/Docker)
-* **Quy mô nhóm:** 4 Thành viên
-* **Phiên bản tài liệu:** v1.0.0
-* **Ngày tạo:** 03/10/2026
+> **Dự án:** Vehicle Management System (VMS) - Hệ Thống Quản Lý Đội Xe Doanh Nghiệp Phân Tán  
+> **Tài liệu tham chiếu:** Đồ án Môn học Điện toán đám mây & Kiến trúc Microservices (Cloud Computing & Microservices Architecture Specification)  
+> **Phiên bản:** 1.1.0 | **Ngày ban hành:** 03/10/2026 | **Tác giả:** Principal Technical Product Manager & Lead Architect
 
 ---
 
-## 1. TỔNG QUAN DỰ ÁN & BỐI CẢNH NGHIỆP VỤ (EXECUTIVE SUMMARY)
+## 1. Mục tiêu Sản phẩm (Product Goals)
 
-### 1.1. Bối cảnh & Vấn đề thực tế (Problem Statement)
-Các doanh nghiệp sở hữu đội xe nội bộ (xe đưa đón cán bộ nhân viên, xe bán tải công vụ, xe giao hàng) hiện nay thường quản lý rời rạc qua sổ sách hoặc file Excel:
-* **Khó khăn trong kiểm soát chi phí:** Chi phí đổ xăng, vé cầu đường BOT, bảo dưỡng định kỳ khó đối soát và dễ thất thoát.
-* **Theo dõi trạng thái xe kém:** Không nắm được xe nào đang rảnh, xe nào đang đi công tác, xe nào đang nằm xưởng sửa chữa.
-* **Bỏ quên lịch bảo trì/đăng kiểm:** Gây nguy cơ mất an toàn giao thông và bị phạt hành chính do không có hệ thống cảnh báo tự động.
-* **Thiếu số liệu tổng hợp:** Ban lãnh đạo không có số liệu tức thời để đánh giá hiệu suất sử dụng xe và tối ưu chi phí vận hành.
+### 1.1 Vấn đề của người dùng (User Problems)
+Tại các doanh nghiệp sở hữu đội xe nội bộ (xe đưa đón cán bộ nhân viên, xe bán tải công vụ, xe vận chuyển hàng hóa nội bộ), công tác quản lý hiện nay chủ yếu dựa vào bảng tính Excel rời rạc hoặc sổ tay viết tay, dẫn tới các điểm nghẽn nghiêm trọng:
+1. **Thất thoát & khó đối soát chi phí (Cost Leakage & Reconciliation Bottleneck):** Quản lý không có công cụ đối chiếu tức thời giữa lộ trình di chuyển với hóa đơn xăng dầu, vé cầu đường BOT, chi phí sửa chữa phát sinh dọc đường do tài xế nộp về.
+2. **Điểm mù trạng thái phương tiện (Fleet Visibility Blind Spots):** Không nắm bắt được thời gian thực xe nào đang rảnh (*Available*), xe nào đang trong chuyến công tác (*In-Use*), xe nào đang nằm xưởng (*Under Maintenance*), gây lãng phí công suất đội xe.
+3. **Quên hạn bảo dưỡng & rủi ro pháp lý (Compliance & Maintenance Oversight):** Không có cơ chế cảnh báo tự động khi xe đạt mốc km bảo trì định kỳ hoặc đến hạn đăng kiểm, dẫn đến nguy cơ mất an toàn kỹ thuật và bị xử phạt hành chính khi lưu thông.
+4. **Hệ thống phân tán thiếu tính cô lập (Lack of Fault Isolation in Legacy Systems):** Các hệ thống Monolith cũ nếu gặp sự cố ở module kế toán hoặc module gửi mail sẽ làm sập toàn bộ ứng dụng, chặn đứng việc điều phối xe.
 
-### 1.2. Mục tiêu giải pháp (Proposed Solution)
-Xây dựng hệ thống **Vehicle Management System (VMS)** dựa trên **Kiến trúc Microservices** hiện đại, sẵn sàng triển khai trên hạ tầng **Cloud VPS**:
-1. **Số hóa toàn diện vòng đời phương tiện:** Quản lý lý lịch xe, phân công tài xế, theo dõi trạng thái vận hành.
-2. **Minh bạch tài chính:** Ghi nhận và phân loại chi tiết từng khoản chi phí phát sinh theo từng xe.
-3. **Tự động hóa cảnh báo:** Tự động gửi email cảnh báo bảo dưỡng định kỳ và chi phí bất thường.
-4. **Trực quan hóa số liệu:** Cung cấp Dashboard biểu đồ phân tích chi phí, tỷ trọng và hiệu suất đội xe.
-5. **Chuẩn Cloud-Native:** Toàn bộ hệ thống được container hóa bằng Docker, sẵn sàng deploy lên môi trường đám mây VPS.
+### 1.2 Giải pháp & Mô hình tham chiếu (Product Solution)
+Hệ thống **Vehicle Management System (VMS)** được thiết kế như một nền tảng quản trị đội xe doanh nghiệp đa dịch vụ (*Microservices-based Fleet Management Platform*), lấy cảm hứng từ các giải pháp quản lý hạm đội chuẩn công nghiệp (như Samsara, Fleetio), nhưng được tinh chỉnh tối ưu cho quy mô doanh nghiệp vừa và nhỏ:
+* **Kiến trúc phân tán Microservices:** Tách biệt độc lập 5 domain nghiệp vụ (User, Vehicle, Cost, Email, Report) sau một API Gateway tập trung, áp dụng triệt để nguyên tắc *Database-per-Service*.
+* **Tự động hóa cảnh báo (Automated Alerting Engine):** Tự động phát hiện ngưỡng bảo dưỡng và chi phí bất thường để gửi cảnh báo qua Email.
+* **Chuẩn Cloud-Native:** Toàn bộ hệ thống được đóng gói container hóa (Dockerized) để sẵn sàng triển khai môi trường máy chủ ảo đám mây (*Cloud VPS*) với chi phí tối ưu.
+
+### 1.3 Phạm vi đối tượng (Target Audience)
+* **Giai đoạn ban đầu (Initial Release):** Đội ngũ vận hành nội bộ công ty bao gồm: Ban Quản trị (*System Administrator*), Trưởng phòng Hành chính/Điều phối Đội xe (*Fleet Manager*), và Tài xế/Nhân viên lái xe (*Company Drivers*).
+* **Định hướng tương lai (Future Horizon):** Mở rộng API cho đối tác sửa chữa gara bên ngoài (*Third-party Garages*) và tích hợp thiết bị giám sát hành trình GPS/OBD-II trực tiếp từ cổng xe.
 
 ---
 
-## 2. PHÂN QUYỀN NGƯỜI DÙNG (ROLE-BASED ACCESS CONTROL - RBAC)
+## 2. Phạm vi và Cốt lõi (Scope & Non-Goals)
 
-Hệ thống phân chia 3 vai trò rõ ràng với ma trận phân quyền:
+### 2.1 Phạm vi cốt lõi (In-Scope)
+Hệ thống phân ranh giới domain rõ ràng thành 5 microservices độc lập:
+
+1. **User & Identity Domain (`user-service`):**
+   * Quản lý định danh, xác thực tập trung qua JWT (*JSON Web Token*).
+   * Phân quyền dựa trên vai trò (*Role-Based Access Control - RBAC*): `ADMIN`, `MANAGER`, `DRIVER`.
+   * Quản lý hồ sơ nhân sự, tài xế và trạng thái tài khoản.
+2. **Vehicle Domain (`vehicle-service`):**
+   * Quản lý danh mục phương tiện, thông số kỹ thuật (biển số, hãng, dòng, số chỗ, tải trọng).
+   * Quản lý vòng đời trạng thái phương tiện (`AVAILABLE`, `IN_USE`, `MAINTENANCE`).
+   * Phân công tài xế chịu trách nhiệm chính và theo dõi số km tích lũy (*Odometer Tracking*).
+3. **Expense & Cost Domain (`cost-service`):**
+   * Ghi nhận các loại phiếu chi: Nhiên liệu (*Fuel*), Cầu đường (*Toll BOT*), Bảo trì (*Maintenance*), Bảo hiểm (*Insurance*), Khác (*Other*).
+   * Lưu trữ metadata hóa đơn, gắn kết chi phí với xe và tài xế bằng khóa ngoại mềm (*Soft Foreign Key*).
+   * Lọc và tra cứu chi phí đa chiều theo thời gian, theo loại và theo từng đầu xe.
+4. **Notification Domain (`email-service`):**
+   * Dịch vụ phi trạng thái (*Stateless Service*) tích hợp SMTP (Google Gmail API/SMTP).
+   * Tự động gửi email thông báo bảo dưỡng định kỳ và cảnh báo chi phí đột biến.
+   * Gửi thông báo phân công xe cho tài xế.
+5. **Analytics & Reporting Domain (`report-service`):**
+   * Tổng hợp chỉ số KPI hạm đội (Tổng xe, tỷ lệ khả dụng, tổng chi phí tháng).
+   * Cung cấp dữ liệu chuỗi thời gian (*Time-series Data*) cho biểu đồ biến động chi phí 12 tháng.
+   * Cơ cấu tỷ trọng chi phí và danh sách các xe tiêu hao chi phí cao nhất (*Top High-Cost Vehicles*).
+
+### 2.2 Nằm ngoài phạm vi (Non-Goals / Future Features)
+Để kiểm soát rủi ro phình phạm vi (*Scope Creep*) và tập trung hoàn thành đồ án chất lượng cao trong thời gian quy định, các tính năng sau **CHẮC CHẮN CHƯA THỰC HIỆN** trong giai đoạn này:
+* **Non-Goal 01 (Real-time GPS Tracking):** Không gắn thiết bị phần cứng GPS để vẽ bản đồ thời gian thực trên bản đồ Google Maps. Vị trí và số km dựa trên kê khai chỉ số công-tơ-mét (*Odometer manual reporting*).
+* **Non-Goal 02 (Payment Gateway Integration):** Không tích hợp cổng thanh toán trực tuyến (VNPAY, Momo, Stripe) để trừ tiền tài xế. Hệ thống chỉ ghi nhận dòng tiền đối soát kế toán.
+* **Non-Goal 03 (Native Mobile App):** Không phát triển ứng dụng di động riêng biệt (Android/iOS Native). Sử dụng giao diện Web Responsive tối ưu trên trình duyệt di động cho tài xế.
+* **Non-Goal 04 (Multi-Tenant Architecture):** Không hỗ trợ kiến trúc đa doanh nghiệp thuê chung hạ tầng. Hệ thống phục vụ một doanh nghiệp duy nhất với toàn bộ tài nguyên chuyên biệt.
+
+---
+
+## 3. Ràng buộc Hệ thống (System Constraints)
+
+### 3.1 Ràng buộc về Tech Stack & Kiến trúc
+* **Backend:** Ngôn ngữ Java 21 LTS; Framework Spring Boot 3.3.4; Quản lý gói bằng Maven Wrapper.
+* **Frontend:** React 18, Vite Bundler, TypeScript 5.x; Styling bằng Tailwind CSS kết hợp Lucide React Icon System; Biểu đồ bằng Chart.js / Recharts.
+* **Cơ sở dữ liệu:** MySQL 8.0 Engine InnoDB. Bắt buộc cấu trúc phân tách logic 4 schemas (`user_db`, `vehicle_db`, `cost_db`, `report_db`). Tuyệt đối không dùng câu lệnh `JOIN` xuyên cơ sở dữ liệu (*Cross-database JOIN*).
+* **API Gateway:** Spring Cloud Gateway chạy ở cổng 8080 làm điểm truy cập duy nhất (*Single Entry Point*), xử lý CORS, phân luồng routing và kiểm tra sơ bộ Token Header.
+
+### 3.2 Ràng buộc Vận hành Mạng & Môi trường Cloud VPS
+* **Môi trường Container:** Bắt buộc 100% dịch vụ phải chạy được thông qua Docker Compose trên bridge network `vehicle-management-network`.
+* **Giao tiếp nội bộ:** Các microservices gọi nhau thông qua service name nội bộ (ví dụ: `http://user-service:8081`), cấm tuyệt đối hardcode `localhost` hoặc IP tĩnh trong code backend.
+* **Máy chủ mục tiêu:** Triển khai trên Linux VPS (Ubuntu 22.04 LTS x64, tối thiểu 2 vCPU, 4GB RAM).
+* **Cơ chế suy thoái mềm (Graceful Degradation):** Nếu `email-service` hoặc `report-service` bị lỗi/tắt, luồng nghiệp vụ tạo xe (`vehicle-service`) và ghi chi phí (`cost-service`) vẫn phải ghi nhận thành công vào Database mà không được văng lỗi 500 ra màn hình người dùng.
+
+---
+
+## 4. Yêu cầu Chức năng (Functional Requirements - FR)
+
+### FR-01: Xác thực & Cấp quyền Truy cập Tập trung (Authentication & Authorization)
+* **Tên & Mô tả:** Cho phép người dùng đăng nhập hệ thống bằng tài khoản được cấp, tạo JWT và phân quyền sử dụng màn hình tương ứng.
+* **Chi tiết dữ liệu & hành vi:**
+  * **Trường dữ liệu tối thiểu:** `username` (VARCHAR 50, Unique), `password` (BCrypt Hash), `role` (ENUM: `ADMIN`, `MANAGER`, `DRIVER`), `status` (ENUM: `ACTIVE`, `LOCKED`).
+  * **Xử lý đăng nhập:** Người dùng gửi `POST /api/v1/users/login`. Backend kiểm tra hash mật khẩu. Nếu đúng, sinh JWT Token có thời hạn sống 24 giờ chứa Payload: `{ userId, username, role, exp }`.
+  * **Cơ chế phân quyền:** API Gateway và các Service Controller kiểm tra `Authorization: Bearer <token>` trên mỗi Request. Trả về `401 Unauthorized` nếu thiếu/hết hạn token; trả về `403 Forbidden` nếu người dùng không đủ quyền hạn vai trò.
+* **Acceptance Signals:**
+  1. Người dùng nhập sai mật khẩu -> Hệ thống hiển thị Toast thông báo đỏ: *"Tên đăng nhập hoặc mật khẩu không chính xác"*.
+  2. Đăng nhập thành công bằng tài khoản `DRIVER` -> Hệ thống tự động chuyển hướng vào màn hình cá nhân tài xế, thanh điều hướng (*Sidebar*) ẩn toàn bộ mục "Quản lý Tài khoản" và "Dashboard Báo cáo".
+  3. Khi gửi Request không đính kèm Token vào API `/api/v1/users` -> Hệ thống lập tức trả về mã HTTP `401`.
+
+---
+
+### FR-02: Quản lý Nhân sự & Hồ sơ Tài xế (User & Driver Management)
+* **Tên & Mô tả:** Quản trị viên (`ADMIN`) quản lý danh sách toàn bộ nhân viên, thông tin giấy phép lái xe và trạng thái hoạt động.
+* **Chi tiết dữ liệu & hành vi:**
+  * **Trường dữ liệu tối thiểu:** `id` (PK), `full_name`, `email`, `phone`, `driver_license_number`, `driver_license_class` (B2, C, D, E), `role`, `status`.
+  * **Luồng CRUD:** `POST /api/v1/users` (Tạo tài khoản mới), `GET /api/v1/users` (Danh sách có phân trang và lọc theo Role), `PUT /api/v1/users/{id}` (Cập nhật), `PATCH /api/v1/users/{id}/status` (Khóa/Kích hoạt tài khoản).
+  * **Ràng buộc:** Email và Username không được trùng lặp trong hệ thống.
+* **Acceptance Signals:**
+  1. Admin bấm nút "Thêm nhân viên", nhập form với email đã tồn tại -> Form hiển thị lỗi dưới input: *"Email này đã được sử dụng"*.
+  2. Admin bấm chuyển toggle trạng thái sang "LOCKED" của một tài xế -> Tài xế đó đang online bị đá văng ra trang Login tại lần gọi API tiếp theo.
+
+---
+
+### FR-03: Quản lý Danh mục & Hồ sơ Phương tiện (Vehicle Fleet Registry)
+* **Tên & Mô tả:** Quản lý đội xe (`MANAGER` và `ADMIN`) quản lý hồ sơ kỹ thuật, thông số và trạng thái pháp lý của toàn bộ xe.
+* **Chi tiết dữ liệu & hành vi:**
+  * **Trường dữ liệu tối thiểu:** `id` (PK), `license_plate` (Biển số xe, Unique, định dạng chuẩn VN ví dụ: `29A-123.45`), `brand` (Hãng sản xuất: Toyota, Ford, Hyundai...), `model` (Dòng xe), `vehicle_type` (SEDAN, SUV, PICKUP, VAN, TRUCK), `seat_capacity` (Số chỗ ngồi), `manufacture_year` (Năm sản xuất), `current_odometer` (Số km hiện tại, INT >= 0), `status` (`AVAILABLE`, `IN_USE`, `MAINTENANCE`), `assigned_driver_id` (Khóa ngoại mềm tham chiếu `users.id`).
+  * **Luồng tương tác:**
+    * Thêm mới xe: `POST /api/v1/vehicles`. Mặc định trạng thái khởi tạo là `AVAILABLE`.
+    * Cập nhật xe: `PUT /api/v1/vehicles/{id}`. Cho phép thay đổi thông tin kỹ thuật hoặc gán tài xế.
+    * Xóa xe: `DELETE /api/v1/vehicles/{id}`. Chuyển trạng thái sang `DECOMMISSIONED` (Soft Delete) nếu xe đã phát sinh chi phí lịch sử để bảo toàn dữ liệu tài chính.
+* **Acceptance Signals:**
+  1. Tại màn hình Danh sách Xe, mỗi xe hiển thị thẻ Badge màu tương ứng: Xanh lá cho `AVAILABLE`, Xanh dương cho `IN_USE`, Đỏ/Vàng cho `MAINTENANCE`.
+  2. Nhập biển số đã có trong hệ thống -> Hệ thống báo lỗi validation ngay lập tức: *"Biển số xe đã tồn tại"*.
+  3. Có thanh tìm kiếm theo Biển số và bộ lọc Dropdown theo Hãng xe/Trạng thái; kết quả bảng phản hồi ngay lập tức trong vòng < 200ms.
+
+---
+
+### FR-04: Phân công Phương tiện & Cập nhật Công-tơ-mét (Vehicle Dispatch & Odometer Update)
+* **Tên & Mô tả:** Điều phối xe cho tài xế và ghi nhận số km vận hành thực tế sau mỗi chuyến đi.
+* **Chi tiết dữ liệu & hành vi:**
+  * **Quy tắc trạng thái:**
+    * Khi gán tài xế và xác nhận bắt đầu chuyến: Chuyển trạng thái xe từ `AVAILABLE` -> `IN_USE`.
+    * Khi tài xế kết thúc chuyến và bàn giao xe: Nhập chỉ số công-tơ-mét mới (`new_odometer`).
+  * **Ràng buộc logic:** Chỉ số `new_odometer` bắt buộc phải **lớn hơn hoặc bằng** `current_odometer` hiện tại của xe. Nếu nhập nhỏ hơn, từ chối cập nhật và báo lỗi dữ liệu phi logic.
+* **Acceptance Signals:**
+  1. Tài xế thao tác bàn giao xe với số km `15.000` trong khi số km hiện tại là `15.200` -> Giao diện chặn lại và hiển thị cảnh báo: *"Số km cập nhật không được nhỏ hơn số km hiện tại (15.200 km)"*.
+  2. Bàn giao xe hợp lệ -> Trạng thái xe trên Dashboard của Manager tự động nhảy về `AVAILABLE`, và số km của xe tăng lên chính xác.
+
+---
+
+### FR-05: Quản lý Phiếu Chi phí & Hóa đơn Vận hành (Fleet Cost & Expense Logging)
+* **Tên & Mô tả:** Ghi nhận và phân loại mọi khoản chi phí phát sinh gắn liền với từng đầu xe, hỗ trợ đính kèm hóa đơn chứng từ.
+* **Chi tiết dữ liệu & hành vi:**
+  * **Trường dữ liệu tối thiểu:** `id` (PK), `vehicle_id` (FK mềm tham chiếu xe), `driver_id` (FK mềm tham chiếu người chi), `cost_type` (`FUEL`, `TOLL`, `MAINTENANCE`, `INSURANCE`, `OTHER`), `amount` (DECIMAL, > 0), `odometer_at_cost` (Số km lúc chi), `cost_date` (Ngày chi, YYYY-MM-DD), `description` (Ghi chú chi tiết), `receipt_image_url` (Đường dẫn ảnh chứng từ/hóa đơn).
+  * **Luồng tương tác:**
+    * Tài xế/Quản lý gửi `POST /api/v1/costs` để tạo phiếu chi.
+    * Xem lịch sử chi phí: `GET /api/v1/costs?vehicleId=...&fromDate=...&toDate=...`.
+    * Xóa phiếu chi (Chỉ dành riêng cho `ADMIN` và `MANAGER`): `DELETE /api/v1/costs/{id}`.
+* **Acceptance Signals:**
+  1. Người dùng nhập số tiền âm (ví dụ `-500000`) -> Hệ thống báo lỗi: *"Số tiền chi phí phải lớn hơn 0"*.
+  2. Số tiền được format chuẩn tiền tệ Việt Nam (ví dụ: gõ `2500000` -> hiển thị `2.500.000 ₫`).
+  3. Màn hình chi phí có bộ lọc chọn khoảng ngày (*Date Range Picker*) và lọc theo từng loại chi phí; tổng tiền của các phiếu đang hiển thị được tự động tính tổng ở chân bảng (*Table Footer*).
+
+---
+
+### FR-06: Tự động hóa Cảnh báo & Gửi Thông báo Email (Automated Alerting Engine)
+* **Tên & Mô tả:** Tự động giám sát ngưỡng hoạt động của xe và chi phí để gửi thông báo kịp thời tới Quản lý và Tài xế qua Email SMTP.
+* **Chi tiết dữ liệu & hành vi:**
+  * **Các kịch bản kích hoạt gửi email tự động:**
+    1. *Cảnh báo bảo dưỡng (Maintenance Trigger):* Khi xe chạy vượt quá 5.000 km kể từ lần bảo dưỡng trước hoặc còn 7 ngày là đến ngày hẹn đăng kiểm.
+    2. *Cảnh báo chi phí bất thường (High Expense Trigger):* Bất kỳ phiếu chi nào có số tiền vượt quá ngưỡng quy định (mặc định > 5.000.000 VNĐ cho một lần đổ xăng/sửa chữa).
+    3. *Thông báo giao xe (Assignment Notification):* Gửi email thông báo cho tài xế khi được quản lý bàn giao xe mới.
+  * **Giao thức:** Tích hợp Spring Boot Starter Mail qua cổng SMTP 587 (TLS) sử dụng App Password an toàn.
+* **Acceptance Signals:**
+  1. Quản lý tạo phiếu bảo dưỡng định kỳ cho xe -> Trong vòng < 5 giây, hộp thư Gmail của tài xế phụ trách nhận được email với tiêu đề chuẩn: *"[VMS] Thông báo lịch bảo dưỡng xe Biển số: 29A-123.45"*.
+  2. Nếu mất kết nối Internet hoặc cấu hình SMTP sai -> Service ghi nhận lỗi vào log file, không làm treo ứng dụng và trả về cờ trạng thái `email_sent: false`.
+
+---
+
+### FR-07: Thống kê Trực quan & Bảng Điều khiển Phân tích (Analytics Dashboard)
+* **Tên & Mô tả:** Cung cấp cho Ban Quản trị và Quản lý đội xe cái nhìn toàn cảnh về tình hình sức khỏe và tài chính của đội xe.
+* **Chi tiết dữ liệu & hành vi:**
+  * **Các khối dữ liệu hiển thị (Widgets):**
+    * *Thẻ số liệu KPI (Metric Cards):* Tổng số xe, Xe sẵn sàng, Xe đang chạy, Xe bảo dưỡng, Tổng chi phí phát sinh trong tháng hiện tại.
+    * *Biểu đồ cột chi phí 12 tháng (Monthly Expense Trend):* Trục hoành là tháng (T1..T12), trục tung là số tiền (VNĐ).
+    * *Biểu đồ tròn cơ cấu chi phí (Expense Breakdown):* Tỷ lệ phần trăm tiền Nhiên liệu, Vé cầu đường, Bảo trì.
+    * *Bảng Top 5 xe tốn kém nhất:* Hiển thị Biển số xe, Tài xế phụ trách, Số lần sửa chữa và Tổng chi phí đã tiêu tốn.
+  * **API Endpoint:** `GET /api/v1/reports/summary`, `GET /api/v1/reports/cost-trends`.
+* **Acceptance Signals:**
+  1. Khi mở trang Dashboard, các thẻ KPI và biểu đồ hiển thị hiệu ứng Loading mượt mà (*Skeleton Card*), sau đó nạp dữ liệu hoàn tất trong < 500ms.
+  2. Dữ liệu biểu đồ phản ánh chính xác 100% khớp với tổng tiền trong module `cost-service`. Khi thêm một phiếu chi mới bên module Cost, quay lại Dashboard chỉ số tổng tiền cập nhật ngay lập tức.
+
+---
+
+### FR-08: Định tuyến & Lọc Bảo vệ API Gateway (Gateway Routing & Security Filter)
+* **Tên & Mô tả:** Điểm tiếp nhận duy nhất cho toàn bộ Frontend, thực hiện định tuyến động tới các Microservices nội bộ và kiểm soát lưu lượng.
+* **Chi tiết dữ liệu & hành vi:**
+  * Định tuyến URL chuẩn hóa:
+    * `/api/v1/users/**` -> `http://user-service:8081`
+    * `/api/v1/vehicles/**` -> `http://vehicle-service:8082`
+    * `/api/v1/costs/**` -> `http://cost-service:8083`
+    * `/api/v1/emails/**` -> `http://email-service:8084`
+    * `/api/v1/reports/**` -> `http://report-service:8085`
+  * Cấu hình CORS tập trung: Cho phép Origin từ Web Frontend (`http://localhost:5173` và IP VPS Cloud).
+* **Acceptance Signals:**
+  1. Frontend chỉ cần cấu hình duy nhất một biến môi trường `VITE_API_BASE_URL=http://<IP_GATEWAY>:8080`, toàn bộ Request đều đi qua cổng này mà không gặp lỗi CORS.
+  2. Bất kỳ Request nào gọi sai đường dẫn (ví dụ `/api/v1/unknown`) -> Gateway phản hồi ngay mã HTTP `404 Not Found` dạng JSON chuẩn.
+
+---
+
+## 5. Yêu cầu Phi Chức năng (Non-Functional Requirements - NFR)
+
+### NFR-01: Hiệu năng & Tốc độ phản hồi (Performance & Responsiveness)
+* **Thời gian phản hồi API (Latency):** 95% số yêu cầu API thông thường (CRUD dữ liệu danh mục) qua Gateway phải có thời gian phản hồi `< 300ms` trong điều kiện tải bình thường.
+* **Tốc độ tải trang Dashboard:** Thời gian hiển thị lần đầu (*First Contentful Paint - FCP*) của ứng dụng React Frontend `< 1.2s`.
+* **Tối ưu hóa tài nguyên JVM:** Mỗi microservice Java Spring Boot được cấu hình giới hạn bộ nhớ JVM Heap: `-Xms128m -Xmx256m` để đảm bảo tổng thể cả 6 services chạy mượt mà trên máy chủ VPS có RAM 4GB.
+
+### NFR-02: Bảo mật & Quyền riêng tư (Security & Privacy)
+* **Mã hóa thông tin đăng nhập:** Mật khẩu người dùng bắt buộc mã hóa bằng thuật toán **BCrypt** với độ phức tạp tối thiểu 10 vòng (*Strength factor = 10*). Tuyệt đối cấm lưu mật khẩu dạng văn bản thuần (*Plain-text*).
+* **Bảo vệ Secret & Credentials:** Không lưu bất kỳ mật khẩu Database, JWT Secret, hoặc mật khẩu Gmail SMTP trong mã nguồn Git. 100% bí mật phải được nạp thông qua biến môi trường (`.env`).
+* **Cô lập mạng máy chủ:** Cổng cơ sở dữ liệu MySQL `3306` chỉ mở trong mạng nội bộ Docker bridge `vehicle-management-network`, không mở công khai ra Internet khi deploy lên VPS production.
+
+### NFR-03: Tính sẵn sàng & Toàn vẹn dữ liệu (Reliability & Data Integrity)
+* **Toàn vẹn giao dịch (ACID Transactions):** Tất cả các thao tác thay đổi dữ liệu liên quan đến nhiều bảng trong cùng 1 service phải được bọc trong annotation `@Transactional`. Rollback 100% nếu xảy ra lỗi giữa chừng.
+* **Tính độc lập lỗi (Fault Isolation):** Sự cố tại các service phụ trợ (`email-service`, `report-service`) không được phép làm gián đoạn các luồng nghiệp vụ cốt lõi tại `vehicle-service` và `user-service`.
+* **Tính bền vững dữ liệu (Persistence):** Toàn bộ dữ liệu của 4 schemas MySQL được ánh xạ vào Docker Volume `mysql_data`, đảm bảo khởi động lại hoặc build lại container thì dữ liệu không bao giờ bị mất (*Zero Data Loss*).
+
+### NFR-04: Đa ngôn ngữ, Kiểu chữ & Mã hóa (Typography & Encoding)
+* **Hỗ trợ Unicode:** Toàn bộ hệ thống (Database, API Gateway, Spring Boot Jackson, Frontend) sử dụng thống nhất bảng mã **UTF-8 (utf8mb4)** để hỗ trợ tiếng Việt có dấu hoàn hảo, không bị lỗi font hay ký tự lạ (*Mojibake*).
+* **Hệ thống phông chữ (Typography):** Ứng dụng sử dụng phông chữ hình học hiện đại **Inter / Roboto** tối ưu cho hiển thị bảng biểu số liệu và dashboard kỹ thuật.
+* **Quy chuẩn định dạng địa phương:**
+  * Tiền tệ: Hiển thị định dạng VNĐ có phân cách hàng nghìn bằng dấu chấm (Ví dụ: `15.000.000 ₫`).
+  * Ngày tháng: Hiển thị chuẩn Việt Nam `DD/MM/YYYY` trên giao diện, truyền nhận qua API chuẩn ISO-8601 (`YYYY-MM-DD`).
+
+### NFR-05: Trải nghiệm người dùng nền tảng (Platform Usability & Accessibility)
+* **Trạng thái phản hồi trực quan (UI Feedback):** Mọi hành động thêm/sửa/xóa đều phải có thông báo tức thời (*Toast Notification*) hiển thị trong 3 giây.
+* **Trạng thái tải & Rỗng (Loading & Empty States):** Khi đang tải dữ liệu bảng biểu phải có hiệu ứng Skeleton Loading; khi bảng không có dữ liệu phải hiển thị hình minh họa và thông báo: *"Chưa có dữ liệu nào được ghi nhận"*.
+* **Xác nhận thao tác nguy hiểm (Destructive Action Confirmation):** Khi người dùng bấm xóa một phương tiện hoặc tài khoản, bắt buộc phải bật hộp thoại xác nhận (*Confirmation Modal*): *"Bạn có chắc chắn muốn xóa không?"* trước khi gửi lệnh lên Server.
+
+---
+
+## 6. Lộ trình Triển khai Phân kỳ (Phase Implementation Roadmap)
+
+Lộ trình phát triển được thiết kế chặt chẽ theo 4 giai đoạn, phân bổ cân bằng cho nhóm 4 thành viên:
 
 ```text
-┌────────────────────────────────┬───────────┬─────────────┬───────────┐
-│ Chức năng                      │   ADMIN   │   MANAGER   │  DRIVER   │
-├────────────────────────────────┼───────────┼─────────────┼───────────┤
-│ Quản lý tài khoản người dùng   │    CRUD   │   Chỉ xem   │   Không   │
-│ Phân quyền tài xế / quản lý    │    Có     │    Không    │   Không   │
-│ Quản lý danh mục phương tiện   │    CRUD   │    CRUD     │   Chỉ xem │
-│ Cập nhật trạng thái xe         │    Có     │    Có       │    Có     │
-│ Ghi nhận / Quản lý chi phí     │    CRUD   │    CRUD     │ Chỉ gửi   │
-│ Xem Dashboard / Thống kê       │  Toàn bộ  │  Toàn bộ    │   Không   │
-│ Gửi email thông báo/cảnh báo   │    Có     │    Có       │   Không   │
-│ Cấu hình hệ thống              │    Có     │    Không    │   Không   │
-└────────────────────────────────┴───────────┴─────────────┴───────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        LỘ TRÌNH 4 GIAI ĐOẠN TRIỂN KHAI DỰ ÁN VMS                       │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+  Phase 1: Khung nền tảng (Base Setup)     ───► ĐÃ HOÀN THÀNH (100% Base Skeleton)
+  Phase 2: Phát triển Độc lập Module       ───► 4 Người làm song song trên 4 nhánh Feature
+  Phase 3: Tích hợp & Kiểm thử Toàn diện   ───► Gộp nhánh vào 'dev', test liên service
+  Phase 4: Đóng gói & Triển khai Cloud VPS ───► Deploy Docker Compose lên máy chủ VPS
 ```
 
-* **ADMIN (Quản trị viên cấp cao):** Toàn quyền quản trị tài khoản, phân quyền, cấu hình hệ thống, xem toàn bộ chi phí và báo cáo của công ty.
-* **MANAGER (Quản lý đội xe):** Phụ trách trực tiếp quản lý xe, duyệt chi phí, lên lịch bảo dưỡng xe, điều phối phương tiện và theo dõi báo cáo vận hành.
-* **DRIVER (Tài xế / Nhân viên lái xe):** Xem thông tin xe được phân công, cập nhật trạng thái xe (Bắt đầu chạy / Hoàn thành chuyến), gửi phiếu kê khai chi phí (tiền xăng, phí BOT, sửa chữa phát sinh).
+### Bảng Phân kỳ Chi tiết & Phân công Công việc:
+
+| Giai đoạn (Phase) | Trọng tâm Triển khai | Yêu cầu Chức năng (FR) liên quan | Người phụ trách chính |
+| :--- | :--- | :--- | :--- |
+| **Phase 1: Hạ tầng Cơ sở** *(Hoàn thành)* | Thiết lập 6 Services, Docker Compose, Database schemas, Gateway routing, Cấu trúc Frontend module. | **FR-08** (Gateway Routing), Hạ tầng Docker & MySQL | Cả nhóm (Leader chủ trì) |
+| **Phase 2.1: Domain Người dùng** *(Tuần 1-2)* | Hoàn thiện bảng `users`, mã hóa BCrypt, phát hành JWT token, phân quyền RBAC, màn hình Login và CRUD User. | **FR-01**, **FR-02** | **Thành viên 1** (`feature/user-service`) |
+| **Phase 2.2: Domain Phương tiện** *(Tuần 1-2)* | Hoàn thiện bảng `vehicles`, nghiệp vụ trạng thái xe, phân công tài xế, cập nhật số km, danh sách xe và modal tạo xe. | **FR-03**, **FR-04** | **Thành viên 2** (`feature/vehicle-service`) |
+| **Phase 2.3: Domain Chi phí** *(Tuần 1-2)* | Hoàn thiện bảng `costs`, phân loại nhiên liệu/cầu đường/bảo trì, tính tổng chi phí theo xe, form nhập và lọc chi phí. | **FR-05** | **Thành viên 3** (`feature/cost-service`) |
+| **Phase 2.4: Domain Báo cáo & Email** *(Tuần 1-2)* | Cấu hình JavaMailSender, logic gửi mail cảnh báo bảo dưỡng; tính toán KPI, vẽ biểu đồ Chart.js trên Dashboard. | **FR-06**, **FR-07** | **Thành viên 4** (`feature/report-email-service`) |
+| **Phase 3: Tích hợp Hệ thống** *(Tuần 3)* | Merge các nhánh feature vào `dev`. Kiểm thử kết nối liên thông từ Frontend qua Gateway tới các DB. Sửa lỗi hồi quy (*Regression testing*). | Toàn bộ từ **FR-01** đến **FR-08** | Cả nhóm 4 người |
+| **Phase 4: Triển khai VPS & Nghiệm thu** *(Tuần 4)* | Merge vào `main`. Thuê máy chủ Cloud VPS, chạy `docker compose up --build -d`, cấu hình Nginx Reverse Proxy, làm slide báo cáo. | **NFR-01** đến **NFR-05**, Triển khai Cloud Production | Cả nhóm 4 người |
 
 ---
 
-## 3. KIẾN TRÚC KỸ THUẬT (TECHNICAL ARCHITECTURE)
+## 7. Lời kết Định hướng Tuân thủ cho Đội ngũ Kỹ sư
 
-### 3.1. Sơ đồ luồng dữ liệu tổng thể
+Tài liệu PRD này là bản cam kết kỹ thuật duy nhất xác định phạm vi và tiêu chuẩn chất lượng của hệ thống **Vehicle Management System (VMS)**. 
 
-```text
-                           [ Trình duyệt / Client ]
-                                      │
-                                      ▼ (HTTPS / HTTP Port 80, 443)
-                 ┌──────────────────────────────────────────┐
-                 │          Nginx Reverse Proxy             │
-                 └────────────────────┬─────────────────────┘
-                                      │
-             ┌────────────────────────┴────────────────────────┐
-             ▼ (Port 5173 / Static Web)                        ▼ (Port 8080)
-┌─────────────────────────┐                       ┌─────────────────────────┐
-│ Frontend (React + Vite) │                       │ Spring Cloud API Gateway│
-└─────────────────────────┘                       └────────────┬────────────┘
-                                                               │ (JWT Filter, Route)
-          ┌──────────────────────┬──────────────────────┬──────┴───────────────┬──────────────────────┐
-          │                      │                      │                      │                      │
-          ▼                      ▼                      ▼                      ▼                      ▼
-┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐
-│   User Service   │   │ Vehicle Service  │   │   Cost Service   │   │  Report Service  │   │  Email Service   │
-│   (Port 8081)    │   │   (Port 8082)    │   │   (Port 8083)    │   │   (Port 8085)    │   │   (Port 8084)    │
-└─────────┬────────┘   └─────────┬────────┘   └─────────┬────────┘   └─────────┬────────┘   └─────────┬────────┘
-          │                      │                      │                      │                      │
-          ▼                      ▼                      ▼                      ▼                      ▼
-     ┌─────────┐            ┌─────────┐            ┌─────────┐            ┌─────────┐           [ Gmail SMTP ]
-     │ user_db │            │vehicle_db            │ cost_db │            │report_db│
-     └─────────┘            └─────────┘            └─────────┘            └─────────┘
-     └───────────────────────────────────┬──────────────────────────────────────────┘
-                                         ▼
-                                   [ MySQL 8.0 ]
-```
-
-### 3.2. Ngăn xếp công nghệ (Technology Stack)
-* **Frontend:** React 18, Vite, TypeScript, Tailwind CSS / Vanilla CSS, Lucide React Icons, Chart.js / Recharts.
-* **Backend:** Java 21 LTS, Spring Boot 3.3.4, Spring Cloud Gateway, Spring Data JPA, Spring Security & JWT, Lombok, Hibernate Validator.
-* **Database:** MySQL 8.0 (Áp dụng Database-per-service logical separation).
-* **Communication:** RESTful APIs qua API Gateway, Inter-service communication qua HTTP REST Client.
-* **Deployment & Cloud:** Docker & Docker Compose, Nginx, Linux Cloud VPS (Ubuntu 22.04 / 24.04).
-
----
-
-## 4. YÊU CẦU CHỨC NĂNG CHI TIẾT (FUNCTIONAL REQUIREMENTS)
-
-### 4.1. Module 1: Quản lý Người dùng & Xác thực (`user-service`)
-* **FR-1.1: Xác thực & Cấp phát Token:** Đăng nhập bằng `username`/`password`. Trả về JWT Token có chứa `userId`, `username`, `role` với thời gian hết hạn (expiration).
-* **FR-1.2: Quản lý danh sách nhân sự:** Cho phép Admin tạo mới, cập nhật thông tin, kích hoạt hoặc khóa tài khoản của Quản lý và Tài xế.
-* **FR-1.3: Thông tin cá nhân (Profile):** Người dùng xem và cập nhật thông tin cá nhân (Họ tên, SĐT, Email, Bằng lái xe của tài xế).
-* **FR-1.4: Phân quyền API:** Chặn truy cập trái phép bằng cách kiểm tra JWT và vai trò tại API Gateway / Service Filter.
-
-### 4.2. Module 2: Quản lý Đội xe (`vehicle-service`)
-* **FR-2.1: Quản lý danh mục xe (CRUD):** 
-  * Thêm, sửa, xóa, tìm kiếm xe theo biển số (`license_plate`), hãng xe (`brand`), dòng xe (`model`), năm sản xuất.
-  * Phân loại xe: Xe 4 chỗ, xe 7 chỗ, xe 16 chỗ, xe bán tải, xe tải nhỏ.
-* **FR-2.2: Quản lý trạng thái xe (Lifecycle Status):**
-  * `AVAILABLE`: Sẵn sàng nhận nhiệm vụ.
-  * `IN_USE`: Đang được sử dụng / đang chạy trên đường.
-  * `MAINTENANCE`: Đang bảo dưỡng / sửa chữa trong xưởng.
-* **FR-2.3: Phân công xe (Vehicle Assignment):** Gán xe cho tài xế phụ trách chính (`driver_id`), ghi nhận ngày nhận xe và số km hiện tại (Odometer).
-* **FR-2.4: Lịch bảo dưỡng & Đăng kiểm:** Ghi nhận chu kỳ bảo dưỡng (theo số km hoặc số tháng), ngày đến hạn đăng kiểm tiếp theo.
-
-### 4.3. Module 3: Quản lý Chi phí Vận hành (`cost-service`)
-* **FR-3.1: Ghi nhận chi phí phát sinh:**
-  * Tạo phiếu chi gắn với một xe cụ thể (`vehicle_id`): Tiền đổ xăng (`FUEL`), Phí cầu đường BOT (`TOLL`), Sửa chữa bảo dưỡng (`MAINTENANCE`), Bảo hiểm (`INSURANCE`), Chi phí khác (`OTHER`).
-  * Thông tin bao gồm: Số tiền (`amount`), Ngày chi (`cost_date`), Địa điểm, Số km tại thời điểm chi, Ghi chú, Link ảnh hóa đơn (`receipt_image_url`).
-* **FR-3.2: Lọc & Tra cứu chi phí:** Tra cứu lịch sử chi phí theo khoảng thời gian (`from_date` - `to_date`), lọc theo từng xe, lọc theo loại chi phí.
-* **FR-3.3: Tổng hợp chi phí theo xe:** API tính tổng chi phí đã tiêu tốn của một xe trong một tháng hoặc một năm để phục vụ bài toán khấu hao.
-
-### 4.4. Module 4: Thông báo & Cảnh báo Tự động (`email-service`)
-* **FR-4.1: Cấu hình gửi mail SMTP:** Kết nối dịch vụ gửi email qua Google SMTP (`smtp.gmail.com`).
-* **FR-4.2: Cảnh báo bảo dưỡng định kỳ:** Tự động gửi email đến Quản lý khi xe đạt ngưỡng số km cần bảo dưỡng hoặc sắp hết hạn đăng kiểm.
-* **FR-4.3: Cảnh báo chi phí bất thường:** Gửi email thông báo khi có khoản chi vượt định mức cho phép (ví dụ một phiếu đổ xăng vượt quá 3.000.000 VNĐ).
-* **FR-4.4: Gửi thông báo thủ công:** Cho phép Quản lý soạn nội dung và gửi email thông báo công việc đến tài xế ngay trên giao diện web.
-
-### 4.5. Module 5: Báo cáo Thống kê & Dashboard (`report-service`)
-* **FR-5.1: KPI Metrics tổng quan:**
-  * Tổng số xe công ty sở hữu, số xe đang vận hành, số xe đang nằm xưởng.
-  * Tổng chi phí vận hành toàn đội xe trong tháng hiện tại và % tăng/giảm so với tháng trước.
-* **FR-5.2: Biểu đồ trực quan:**
-  * Biểu đồ cột (Bar Chart): Xu hướng biến động chi phí vận hành qua 12 tháng.
-  * Biểu đồ tròn (Doughnut Chart): Cơ cấu chi phí (Nhiên liệu chiếm bao nhiêu %, Cầu đường %, Bảo dưỡng %).
-  * Biểu đồ trạng thái: Tỷ lệ phân bổ trạng thái xe.
-* **FR-5.3: Top xe tiêu hao chi phí cao nhất:** Bảng xếp hạng các xe có chi phí bảo trì và nhiên liệu tốn kém nhất để doanh nghiệp cân nhắc thanh lý hoặc đổi mới.
-
----
-
-## 5. THIẾT KẾ DỮ LIỆU SƠ BỘ (DATA SCHEMAS)
-
-> **Nguyên tắc cốt lõi:** Mỗi service quản lý 1 Database độc lập. Liên kết dữ liệu giữa các service sử dụng **khóa ngoại mềm (Soft Reference ID)**, tuyệt đối không dùng FOREIGN KEY cứng giữa các cơ sở dữ liệu.
-
-```sql
--- Database: user_db (user-service)
-TABLE users (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    phone VARCHAR(20),
-    role VARCHAR(20) NOT NULL, -- 'ADMIN', 'MANAGER', 'DRIVER'
-    driver_license VARCHAR(50),
-    status VARCHAR(20) DEFAULT 'ACTIVE',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Database: vehicle_db (vehicle-service)
-TABLE vehicles (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    license_plate VARCHAR(20) UNIQUE NOT NULL,
-    brand VARCHAR(50) NOT NULL,
-    model VARCHAR(50) NOT NULL,
-    vehicle_type VARCHAR(30) NOT NULL, -- 'SEDAN', 'SUV', 'VAN', 'PICKUP', 'TRUCK'
-    seat_capacity INT DEFAULT 5,
-    manufacture_year INT,
-    current_odometer INT DEFAULT 0, -- Số km đã chạy
-    assigned_driver_id BIGINT,      -- ID tài xế từ user-service (Soft FK)
-    status VARCHAR(20) DEFAULT 'AVAILABLE', -- 'AVAILABLE', 'IN_USE', 'MAINTENANCE'
-    next_maintenance_date DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Database: cost_db (cost-service)
-TABLE costs (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    vehicle_id BIGINT NOT NULL,     -- ID xe từ vehicle-service (Soft FK)
-    driver_id BIGINT,               -- ID người chi từ user-service (Soft FK)
-    cost_type VARCHAR(30) NOT NULL, -- 'FUEL', 'TOLL', 'MAINTENANCE', 'INSURANCE', 'OTHER'
-    amount DECIMAL(12, 2) NOT NULL,
-    odometer INT,                   -- Số km lúc phát sinh chi phí
-    cost_date DATE NOT NULL,
-    description TEXT,
-    receipt_image_url VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Database: report_db (report-service)
-TABLE daily_metrics (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    metric_date DATE UNIQUE NOT NULL,
-    total_vehicles INT DEFAULT 0,
-    active_vehicles INT DEFAULT 0,
-    maintenance_vehicles INT DEFAULT 0,
-    daily_total_cost DECIMAL(12, 2) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
----
-
-## 6. CHUẨN ĐỒNG BỘ RESTful API (API CONTRACT CONVENTIONS)
-
-Tất cả các Microservices phải tuân thủ nghiêm ngặt định dạng phản hồi chuẩn:
-
-### 6.1. Định dạng phản hồi chung (Common ApiResponse)
-```json
-{
-  "success": true,
-  "code": 200,
-  "message": "Thao tác thành công",
-  "data": { ... },
-  "timestamp": "2026-10-03T11:20:00Z"
-}
-```
-
-### 6.2. Định dạng lỗi chuẩn (Common ErrorResponse)
-```json
-{
-  "success": false,
-  "code": 400,
-  "message": "Dữ liệu đầu vào không hợp lệ",
-  "errors": [
-    "Biển số xe không được để trống",
-    "Số tiền chi phí phải lớn hơn 0"
-  ],
-  "timestamp": "2026-10-03T11:20:00Z"
-}
-```
-
----
-
-## 7. YÊU CẦU PHI CHỨC NĂNG (NON-FUNCTIONAL REQUIREMENTS)
-
-1. **Hiệu năng & Khả năng đáp ứng:** Thời gian phản hồi API qua Gateway trung bình `< 300ms` trong điều kiện tải bình thường.
-2. **Bảo mật:**
-   * Mật khẩu mã hóa bằng chuẩn BCrypt.
-   * Giao tiếp giữa Frontend và Backend bảo vệ bằng JWT token (gửi qua Header `Authorization: Bearer <token>`).
-   * Không lưu mật khẩu hoặc Secret Key cứng trong mã nguồn (toàn bộ nạp qua biến môi trường `.env`).
-3. **Tính sẵn sàng & Khả năng mở rộng:** Các dịch vụ hoạt động độc lập; nếu `cost-service` hoặc `email-service` tạm thời gặp sự cố, `vehicle-service` và `user-service` vẫn tiếp tục hoạt động bình thường.
-4. **Chuẩn thiết kế UI/UX:**
-   * Giao diện Dashboard hiện đại, phông chữ Inter chuẩn nét, sử dụng bảng màu HSL hài hòa.
-   * Hiển thị đầy đủ trạng thái Loading (Skeleton), Bảng phân trang (Pagination), Hộp thoại xác nhận trước khi xóa (Confirm Modal).
-   * Định dạng tiền tệ VNĐ (ví dụ `1.500.000 ₫`) và ngày tháng định dạng Việt Nam (`DD/MM/YYYY`).
-
----
-
-## 8. KẾ HOẠCH TRIỂN KHAI LÊN CLOUD VPS (DEPLOYMENT ARCHITECTURE)
-
-### 8.1. Thông số máy chủ VPS khuyến nghị
-* **Hệ điều hành:** Ubuntu 22.04 LTS hoặc 24.04 LTS x64
-* **Cấu hình tối thiểu:** 2 CPU Cores, 4GB RAM (hoặc 2GB RAM + 4GB Swap), 25GB SSD
-* **Phần mềm cài đặt:** Docker Engine, Docker Compose plugin, Git
-
-### 8.2. Quy trình triển khai 4 bước trên VPS
-```bash
-# Bước 1: SSH vào VPS và Clone mã nguồn
-ssh root@<IP_VPS>
-git clone https://github.com/kiet293/vehicle-management-system.git
-cd vehicle-management-system
-
-# Bước 2: Tạo file biến môi trường production từ file mẫu
-cp .env.example .env
-cp frontend/.env.example frontend/.env
-# Chỉnh sửa IP_VPS hoặc Domain vào file .env
-
-# Bước 3: Khởi động toàn bộ hệ thống bằng Docker Compose
-docker compose up --build -d
-
-# Bước 4: Kiểm tra trạng thái các container
-docker compose ps
-```
-
-### 8.3. Thiết lập Nginx & Domain Public (Tùy chọn nâng cao)
-* Cấu hình Nginx làm Reverse Proxy đón cổng 80/443 của VPS định tuyến vào cổng 5173 (Frontend) và cổng 8080 (API Gateway).
-* Cài đặt SSL miễn phí với Let's Encrypt Certbot (`certbot --nginx -d vms.yourdomain.com`).
-
----
-
-## 9. BẢNG PHÂN CHIA CÔNG VIỆC CHI TIẾT CHO 4 THÀNH VIÊN (WBS)
-
-```text
-┌───────────────┬──────────────────────────────────┬─────────────────────────────┐
-│ Thành viên    │ Phạm vi phụ trách                │ Nhánh Git & Nhiệm vụ chính  │
-├───────────────┼──────────────────────────────────┼─────────────────────────────┤
-│ THÀNH VIÊN 1  │ User Service (Backend + Front)   │ feature/user-service        │
-│               │ - Xác thực JWT, Quản lý nhân sự  │ - Viết Login, CRUD User     │
-│               │                                  │ - Phân quyền Admin/Manager  │
-├───────────────┼──────────────────────────────────┼─────────────────────────────┤
-│ THÀNH VIÊN 2  │ Vehicle Service (Backend + Front)│ feature/vehicle-service     │
-│               │ - Quản lý xe, Lịch bảo dưỡng     │ - CRUD danh mục xe          │
-│               │ - Gán tài xế, Trạng thái xe      │ - Bộ lọc trạng thái & Modal │
-├───────────────┼──────────────────────────────────┼─────────────────────────────┤
-│ THÀNH VIÊN 3  │ Cost Service (Backend + Front)   │ feature/cost-service        │
-│               │ - Quản lý chi phí xăng, cầu đường│ - CRUD phiếu chi phí        │
-│               │ - Lịch sử chi tiêu & Hóa đơn     │ - Thống kê chi phí theo xe  │
-├───────────────┼──────────────────────────────────┼─────────────────────────────┤
-│ THÀNH VIÊN 4  │ Report Service + Email Service   │ feature/report-email-service│
-│               │ - Dashboard biểu đồ phân tích    │ - Tổng hợp số liệu KPI      │
-│               │ - Tự động hóa gửi mail cảnh báo  │ - Tích hợp biểu đồ Chart.js │
-│               │                                  │ - Gửi mail SMTP cảnh báo    │
-└───────────────┴──────────────────────────────────┴─────────────────────────────┘
-```
-
----
-
-## 10. LỘ TRÌNH PHÁT TRIỂN & TIÊU CHÍ NGHIỆM THU (ROADMAP & ACCEPTANCE)
-
-### Giai đoạn 1: Base Project & Phân chia khung (ĐÃ HOÀN THÀNH ✅)
-* [x] Xây dựng khung 6 Spring Boot Services + API Gateway.
-* [x] Cấu hình Docker Compose 8 containers & MySQL 4 databases.
-* [x] Cấu trúc Frontend phân tách 5 modules độc lập.
-* [x] Đẩy mã nguồn chuẩn lên nhánh `main` và `dev` trên GitHub.
-
-### Giai đoạn 2: Phát triển độc lập từng Module (2 - 3 Tuần)
-* [ ] 4 thành viên hoàn thiện Entity, DTO, Repository, Service và Controller theo PRD.
-* [ ] 4 thành viên hoàn thiện giao diện Frontend trong `frontend/src/modules/` tương ứng.
-* [ ] Kiểm thử nội bộ từng service qua Swagger/Postman và giao diện web.
-
-### Giai đoạn 3: Tích hợp & Kiểm thử toàn diện (1 Tuần)
-* [ ] Tạo Pull Request gộp từng nhánh tính năng vào nhánh `dev`.
-* [ ] Kiểm thử luồng thông suốt từ Frontend -> API Gateway -> Microservices -> Database.
-* [ ] Kiểm thử gửi email cảnh báo tự động.
-
-### Giai đoạn 4: Đóng gói & Triển khai Cloud VPS (1 Tuần)
-* [ ] Merge nhánh `dev` vào nhánh `main`.
-* [ ] Thuê VPS (hoặc dùng trial AWS/DigitalOcean/Google Cloud).
-* [ ] Chạy `docker compose up --build -d` trên VPS và kiểm tra IP Public.
-* [ ] Chuẩn bị slide báo cáo, quay video demo hệ thống và tài liệu nộp môn học.
+Tất cả 4 thành viên trong nhóm phát triển được yêu cầu:
+1. **Tuyệt đối bám sát ranh giới Domain:** Không sửa file nằm ngoài thư mục microservice được phân công.
+2. **Tuân thủ triệt để Tiêu chuẩn API & Schema:** Dữ liệu phản hồi phải bọc trong `ApiResponse<T>`, không tự ý đổi kiểu dữ liệu các trường khóa ngoại mềm (`userId`, `vehicleId`).
+3. **Mỗi tính năng hoàn thành chỉ được coi là đạt yêu cầu (*Done Definition*) khi và chỉ khi vượt qua đầy đủ các *Acceptance Signals* tương ứng đã định nghĩa trong tài liệu này.**
