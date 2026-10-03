@@ -19,6 +19,9 @@ spring:
     show-sql: false
     open-in-view: false
 
+services:
+  email-service-url: ${EMAIL_SERVICE_URL:http://localhost:8084}
+
 management:
   endpoints:
     web:

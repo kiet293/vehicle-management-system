@@ -19,6 +19,10 @@ spring:
     show-sql: false
     open-in-view: false
 
+jwt:
+  secret: ${JWT_SECRET:vms_super_secret_jwt_key_with_at_least_256_bits_for_hmac_sha256_production}
+  expiration-ms: 86400000
+
 management:
   endpoints:
     web:

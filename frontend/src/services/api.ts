@@ -12,11 +12,31 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Response interceptor for centralized error handling/logging
+// Request interceptor: attach Authorization Bearer token if present
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('vms_auth_token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor: handle 401 Unauthorized globally
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.warn('[API Gateway Request Failed]:', error.message);
+    if (error.response && error.response.status === 401) {
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login') {
+        localStorage.removeItem('vms_auth_token');
+        localStorage.removeItem('vms_user');
+        localStorage.setItem('vms_redirect_url', currentPath);
+        window.location.href = '/login?session_expired=true';
+      }
+    }
     return Promise.reject(error);
   }
 );
