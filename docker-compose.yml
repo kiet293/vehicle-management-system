@@ -1,0 +1,196 @@
+networks:
+  vehicle-management-network:
+    name: vehicle-management-network
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+
+services:
+  # =========================================================================
+  # Database Service: MySQL 8.0
+  # Automatically initializes 4 logical databases: user_db, vehicle_db, cost_db, report_db
+  # =========================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: vms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_USER: ${DB_USERNAME:-vms_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-vms_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - vehicle-management-network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p${MYSQL_ROOT_PASSWORD:-rootpassword} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # =========================================================================
+  # Backend Microservice: User Service (Port 8081)
+  # =========================================================================
+  user-service:
+    build:
+      context: ./user-service/backend
+      dockerfile: Dockerfile
+    container_name: vms-user-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: user_db
+      DB_USERNAME: ${DB_USERNAME:-vms_user}
+      DB_PASSWORD: ${DB_PASSWORD:-vms_password}
+      JWT_SECRET: ${JWT_SECRET:-placeholder_jwt_secret_key_minimum_32_characters}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - vehicle-management-network
+
+  # =========================================================================
+  # Backend Microservice: Vehicle Service (Port 8082)
+  # =========================================================================
+  vehicle-service:
+    build:
+      context: ./vehicle-service/backend
+      dockerfile: Dockerfile
+    container_name: vms-vehicle-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: 8082
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: vehicle_db
+      DB_USERNAME: ${DB_USERNAME:-vms_user}
+      DB_PASSWORD: ${DB_PASSWORD:-vms_password}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - vehicle-management-network
+
+  # =========================================================================
+  # Backend Microservice: Cost Service (Port 8083)
+  # =========================================================================
+  cost-service:
+    build:
+      context: ./cost-service/backend
+      dockerfile: Dockerfile
+    container_name: vms-cost-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: cost_db
+      DB_USERNAME: ${DB_USERNAME:-vms_user}
+      DB_PASSWORD: ${DB_PASSWORD:-vms_password}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - vehicle-management-network
+
+  # =========================================================================
+  # Backend Microservice: Email Service (Port 8084, Stateless)
+  # =========================================================================
+  email-service:
+    build:
+      context: ./email-service/backend
+      dockerfile: Dockerfile
+    container_name: vms-email-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      MAIL_USERNAME: ${MAIL_USERNAME:-placeholder_email@example.com}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-placeholder_app_password}
+    networks:
+      - vehicle-management-network
+
+  # =========================================================================
+  # Backend Microservice: Report Service (Port 8085)
+  # =========================================================================
+  report-service:
+    build:
+      context: ./report-service/backend
+      dockerfile: Dockerfile
+    container_name: vms-report-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      SERVER_PORT: 8085
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: report_db
+      DB_USERNAME: ${DB_USERNAME:-vms_user}
+      DB_PASSWORD: ${DB_PASSWORD:-vms_password}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - vehicle-management-network
+
+  # =========================================================================
+  # Infrastructure: API Gateway (Port 8080)
+  # Reverse proxy routing to individual microservices via internal Docker DNS
+  # =========================================================================
+  api-gateway:
+    build:
+      context: ./api-gateway/backend
+      dockerfile: Dockerfile
+    container_name: vms-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_PORT: 8080
+      USER_SERVICE_URL: http://user-service:8081
+      VEHICLE_SERVICE_URL: http://vehicle-service:8082
+      COST_SERVICE_URL: http://cost-service:8083
+      EMAIL_SERVICE_URL: http://email-service:8084
+      REPORT_SERVICE_URL: http://report-service:8085
+    depends_on:
+      - user-service
+      - vehicle-service
+      - cost-service
+      - email-service
+      - report-service
+    networks:
+      - vehicle-management-network
+
+  # =========================================================================
+  # Frontend: React + TypeScript + Vite (Port 5173)
+  # =========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vms-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    depends_on:
+      - api-gateway
+    networks:
+      - vehicle-management-network

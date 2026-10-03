@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: user-service-auth
+          uri: ${USER_SERVICE_URL:http://user-service:8081}
+          predicates:
+            - Path=/api/auth/**
+        - id: user-service-users
+          uri: ${USER_SERVICE_URL:http://user-service:8081}
+          predicates:
+            - Path=/api/users/**
+        - id: vehicle-service
+          uri: ${VEHICLE_SERVICE_URL:http://vehicle-service:8082}
+          predicates:
+            - Path=/api/vehicles/**
+        - id: cost-service
+          uri: ${COST_SERVICE_URL:http://cost-service:8083}
+          predicates:
+            - Path=/api/costs/**
+        - id: email-service
+          uri: ${EMAIL_SERVICE_URL:http://email-service:8084}
+          predicates:
+            - Path=/api/email/**
+        - id: report-service
+          uri: ${REPORT_SERVICE_URL:http://report-service:8085}
+          predicates:
+            - Path=/api/reports/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+              - "http://127.0.0.1:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders: "*"
+            allowCredentials: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
