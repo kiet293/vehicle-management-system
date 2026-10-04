@@ -40,33 +40,36 @@ public class EmailService {
         String errorMsg = null;
 
         String recipient = (to != null && !to.trim().isEmpty()) ? to.trim() : "fleet-admin@vms.com";
+        String emailSubject = (subject != null && !subject.trim().isEmpty()) ? subject.trim() : "[VMS] Thông báo từ Hệ thống Quản lý Phương tiện";
+        String emailContent = (content != null) ? content : "";
+        EmailType emailType = (type != null) ? type : EmailType.MANUAL;
 
         // Fault Isolation: Try sending via SMTP, if fails or mock -> fallback smoothly
-        if (mailSender != null && !fromEmail.contains("placeholder")) {
+        if (mailSender != null && !fromEmail.contains("placeholder") && !fromEmail.contains("example.com")) {
             try {
                 SimpleMailMessage message = new SimpleMailMessage();
                 message.setFrom(fromEmail);
                 message.setTo(recipient);
-                message.setSubject(subject);
-                message.setText(content);
+                message.setSubject(emailSubject);
+                message.setText(emailContent);
                 mailSender.send(message);
                 log.info("Sent email successfully to: {}", recipient);
             } catch (Exception ex) {
-                log.warn("SMTP send failed ({}), recorded as MOCK_SENT for demonstration.", ex.getMessage());
-                status = EmailStatus.MOCK_SENT;
-                errorMsg = "SMTP Server unavailable: " + ex.getMessage();
+                log.warn("SMTP send failed ({}), recorded as FAILED.", ex.getMessage());
+                status = EmailStatus.FAILED;
+                errorMsg = "Lỗi kết nối máy chủ SMTP Gmail: " + ex.getMessage();
             }
         } else {
-            log.info("Simulating email send (Stateless Mock): To: {}, Subject: {}", recipient, subject);
+            log.info("Simulating email send (Stateless Mock): To: {}, Subject: {}", recipient, emailSubject);
             status = EmailStatus.MOCK_SENT;
         }
 
         EmailLog logEntry = EmailLog.builder()
                 .id(logId)
                 .recipient(recipient)
-                .subject(subject)
-                .content(content)
-                .type(type)
+                .subject(emailSubject)
+                .content(emailContent)
+                .type(emailType)
                 .status(status)
                 .errorMessage(errorMsg)
                 .sentAt(LocalDateTime.now())

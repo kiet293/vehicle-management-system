@@ -70,7 +70,7 @@ export interface CostSummary {
   monthlyTotals: Record<number, number>;
 }
 
-export type EmailType = 'MAINTENANCE_ALERT' | 'HIGH_COST_ALERT' | 'ASSIGNMENT_NOTIFICATION' | 'TEST';
+export type EmailType = 'MAINTENANCE_ALERT' | 'HIGH_COST_ALERT' | 'ASSIGNMENT_NOTIFICATION' | 'TEST' | 'MANUAL';
 export type EmailStatus = 'SENT' | 'MOCK_SENT' | 'FAILED';
 
 export interface EmailLog {
