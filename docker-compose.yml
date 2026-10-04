@@ -120,6 +120,8 @@ services:
       - "8084:8084"
     environment:
       SERVER_PORT: 8084
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_USERNAME: ${MAIL_USERNAME:-placeholder_email@example.com}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-placeholder_app_password}
     networks:
