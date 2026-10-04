@@ -6,6 +6,7 @@ import com.vms.email.dto.HighCostAlertRequest;
 import com.vms.email.dto.MaintenanceAlertRequest;
 import com.vms.email.dto.SendEmailRequest;
 import com.vms.email.entity.EmailLog;
+import com.vms.email.entity.EmailStatus;
 import com.vms.email.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,13 @@ public class EmailController {
                 request.getContent(),
                 request.getType()
         );
-        return ResponseEntity.ok(ApiResponse.success("Đã kích hoạt gửi email thành công!", log));
+        if (log.getStatus() == EmailStatus.FAILED) {
+            return ResponseEntity.ok(ApiResponse.error(log.getErrorMessage() != null ? log.getErrorMessage() : "Gửi email thất bại", log));
+        }
+        String successMsg = (log.getStatus() == EmailStatus.SENT)
+                ? "Đã gửi email thành công qua máy chủ SMTP!"
+                : "Đã ghi nhận gửi email thành công (Chế độ mô phỏng / Mock Sent)!";
+        return ResponseEntity.ok(ApiResponse.success(successMsg, log));
     }
 
     @PostMapping("/alerts/maintenance")
