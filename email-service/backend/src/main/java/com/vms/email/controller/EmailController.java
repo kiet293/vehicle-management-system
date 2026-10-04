@@ -6,6 +6,7 @@ import com.vms.email.dto.HighCostAlertRequest;
 import com.vms.email.dto.MaintenanceAlertRequest;
 import com.vms.email.dto.SendEmailRequest;
 import com.vms.email.entity.EmailLog;
+import com.vms.email.entity.EmailStatus;
 import com.vms.email.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
