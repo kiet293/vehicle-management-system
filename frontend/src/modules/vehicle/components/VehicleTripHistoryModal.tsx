@@ -5,36 +5,13 @@ import { EmptyState } from '../../../components/common/EmptyState';
 import { vehicleService } from '../services/vehicleService';
 import { TripStatus, Vehicle, VehicleTrip } from '../../../types';
 import { AlertTriangle, Gauge, History, RotateCcw } from 'lucide-react';
+import { formatDateTime, formatDuration, formatKm } from '../utils/vehicleFormat';
 
 interface VehicleTripHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   vehicle: Vehicle;
 }
-
-const formatKm = (km?: number): string =>
-  km === undefined || km === null ? '—' : `${km.toLocaleString('vi-VN')} km`;
-
-const formatDateTime = (value?: string): string => {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-const formatDuration = (minutes?: number): string => {
-  if (minutes === undefined || minutes === null) return 'Đang chạy';
-  if (minutes < 60) return `${minutes} phút`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest === 0 ? `${hours} giờ` : `${hours}h ${rest}p`;
-};
 
 const statusMeta: Record<TripStatus, { label: string; className: string }> = {
   IN_PROGRESS: { label: 'ĐANG CHẠY', className: 'badge badge-info' },

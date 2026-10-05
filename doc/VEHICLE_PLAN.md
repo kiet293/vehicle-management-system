@@ -1039,6 +1039,8 @@ frontend/src/modules/vehicle/
 ├── components/
 │   ├── StatusBadge.tsx                    # badge trạng thái
 │   ├── VehicleFilters.tsx                 # search + brand + status + view toggle
+│   ├── VehiclePageHeader.tsx              # tiêu đề trang + nút "+ Thêm xe mới"
+│   ├── ErrorBanner.tsx                    # banner lỗi mạng + nút "Thử lại"
 │   ├── VehicleCardGrid.tsx                # view dạng thẻ
 │   ├── VehicleDataTable.tsx               # view dạng bảng
 │   ├── VehicleRowActions.tsx              # nút hành động dùng chung 2 view
@@ -1047,13 +1049,18 @@ frontend/src/modules/vehicle/
 │   ├── ReturnVehicleModal.tsx             # modal trả xe + validate km
 │   ├── DeleteVehicleModal.tsx             # confirm soft-delete
 │   └── VehicleTripHistoryModal.tsx        # (tạo ở mục #8)
+├── hooks/
+│   ├── useVehicleFleet.ts                 # danh sách + filter + fetch + debounce
+│   └── useVehicleActions.ts               # state modal + 8 handler gọi API
 ├── pages/
 │   └── VehiclePage.tsx                    # orchestrator, < 250 dòng
 ├── services/
 │   └── vehicleService.ts
 └── utils/
-    └── vehicleFormat.ts                   # formatPlate, km, duration
+    └── vehicleFormat.ts                   # formatPlate, formatKm, formatDuration, formatDateTime
 ```
+
+Đã xóa `components/.gitkeep` (folder không còn rỗng).
 
 ### 7.4 Nguyên tắc tách
 
@@ -1064,7 +1071,7 @@ frontend/src/modules/vehicle/
 | **Mỗi component nhận `isDriver`** | Quyền phụ thuộc role, truyền prop thay vì gọi `useAuth()` bên trong (dễ test) |
 | **Modal tự quản lý form state** | `isOpen` false → reset state, tránh rò rỉ dữ liệu giữa 2 lần mở |
 | **Props callback rõ ràng** | `onSuccess: () => void` để parent refetch, không tự fetch lại |
-| **Business logic gọi API nằm ở parent** | Component chỉ render + gọi callback |
+| **Business logic gọi API nằm ở parent** | Component chỉ render + gọi callback. Thực tế gom vào `useVehicleActions` (hook), component vẫn thuần hiển thị |
 
 ### 7.5 Chi tiết từng component
 
@@ -1137,10 +1144,12 @@ interface Props {
 Khác biệt CREATE vs EDIT:
 | Field | CREATE | EDIT |
 |---|---|---|
-| Biển số | ✅ nhập được, tự format | ❌ disabled (đổi biển số phải qua API khác) |
+| Biển số | ✅ nhập được, tự format | ❌ không render field (UI cũ không có field này) |
 | Km ban đầu | ✅ có | ❌ không (dùng `currentOdometer`) |
 | Tiêu đề | "Thêm phương tiện mới vào đội xe" | "Chỉnh sửa xe: {plate}" |
 | Nút | "Thêm phương tiện" | "Lưu thay đổi" |
+
+**Lệch so với bản kế hoạch (giữ nguyên UI cũ):** bản kế hoạch gợi ý render biển số ở chế độ EDIT dạng `disabled`. Thực tế modal EDIT trước #6 **không có** ô biển số, nên field bị bỏ hẳn để không đổi UI (nguyên tắc "không đổi hành vi" ở mục 7.4 được ưu tiên). Option loại xe dùng `VEHICLE_TYPE_LABELS[].long` (CREATE) và `.short` (EDIT) để giữ nguyên nhãn cũ.
 
 **7.5.8 `AssignDriverModal.tsx`** — dòng 1002-1058. Props: `isOpen, onClose, vehicle, onAssign(driverId, driverName, driverEmail)`. Giữ nguyên empty-state "Hiện không có tài xế nào sẵn sàng".
 
@@ -1148,28 +1157,32 @@ Khác biệt CREATE vs EDIT:
 
 **7.5.10 `DeleteVehicleModal.tsx`** — dòng 1158-1169, bọc `ConfirmModal`.
 
+**7.5.11 `useVehicleFleet.ts` + `useVehicleActions.ts`** — tách 2 phần state khỏi page để đạt mục tiêu < 250 dòng:
+- `useVehicleFleet()`: `vehicles`, `isLoading`, `errorBanner`, `fetchVehicles()`, `search/statusFilter/brandFilter/brands/viewMode`, `clearFilters()`, `hasActiveFilter`. Giữ nguyên effect đọc `?status=` từ URL, load brands 1 lần, debounce 300 ms.
+- `useVehicleActions(fetchVehicles)`: 8 cờ modal + `selectedVehicle`/`deletingVehicle`/`availableDrivers`, 6 `open*/close*`, `handleCreate/Update/Assign/Return`, `handleFinishMaintenance`, `confirmDelete`. Gộp luôn `extractErrorMessage()` (trước đó copy-paste ở 2 chỗ).
+
 ### 7.6 `VehiclePage.tsx` sau khi tách (mục tiêu)
 
 ```typescript
 // 1. imports gọn
-// 2. state (giữ nguyên tên)
-// 3. fetchVehicles()
-// 4. debounce effect
-// 5. 8 handler (open*/handle*/confirm*) — giữ nguyên logic
-// 6. return JSX: banner + header + <VehicleFilters/> + render view + 5 modal
+// 2. useVehicleFleet() + useVehicleActions(fetchVehicles)
+// 3. rowActionProps dùng chung cho Grid và Table
+// 4. return JSX: <ErrorBanner/> + <VehiclePageHeader/> + <VehicleFilters/> + render view + 5 modal
 ```
+
+Kết quả: **1240 → 146 dòng** (không tính dòng trống), page thuần orchestrate.
 
 ### 7.7 Tiêu chí nghiệm thu
 
-- [ ] `VehiclePage.tsx` < 250 dòng
-- [ ] `components/` có đủ 10 file theo mục 7.3
-- [ ] `utils/vehicleFormat.ts` có `formatPlate`, `formatKm`
-- [ ] `npx tsc --noEmit` exit 0
-- [ ] `npm run build` thành công
-- [ ] **So sánh UI trước/sau: KHÔNG đổi** (chụp screenshot 2 chế độ GRID/TABLE, mỗi modal)
-- [ ] Tất cả luồng vẫn chạy: thêm, sửa, xóa, bàn giao, trả xe, bảo dưỡng, lọc, tìm kiếm, xem lịch sử
-- [ ] Role DRIVER vẫn bị ẩn đúng các nút không được phép
-- [ ] Không còn import thừa / biến không dùng
+- [x] `VehiclePage.tsx` < 250 dòng → **146 dòng**
+- [x] `components/` có đủ 10 file theo mục 7.3 (thêm `VehiclePageHeader.tsx`, `ErrorBanner.tsx`) + `hooks/` 2 file
+- [x] `utils/vehicleFormat.ts` có `formatPlate`, `formatKm` (+ `formatDuration`, `formatDateTime`, `FALLBACK_VEHICLE_IMAGE`)
+- [x] `npx tsc --noEmit` exit 0
+- [x] `npm run build` thành công (1674 modules, built in ~9s)
+- [ ] **So sánh UI trước/sau: KHÔNG đổi** (chụp screenshot 2 chế độ GRID/TABLE, mỗi modal) — chưa làm: môi trường không có trình duyệt, cần user xác nhận tay
+- [ ] Tất cả luồng vẫn chạy: thêm, sửa, xóa, bàn giao, trả xe, bảo dưỡng, lọc, tìm kiếm, xem lịch sử — logic được giữ nguyên 1:1 (chỉ di chuyển code), cần test tay
+- [x] Role DRIVER vẫn bị ẩn đúng các nút không được phép (`isDriver` truyền prop cho `VehicleRowActions`/`VehiclePageHeader`/`EmptyState`)
+- [x] Không còn import thừa / biến không dùng (`noUnusedLocals: true` trong tsconfig nên `tsc` chặn)
 
 ### 7.8 Commit
 
@@ -1204,7 +1217,7 @@ refactor(vehicle): extract vehicle page into reusable components
 | 2026-10-05 | #5 Brand filter | (xem git log) | ✅ xong | /brands trả 4 hãng; filter brand case-insensitive + kết hợp status/search; regression P0 pass; tsc exit 0 |
 | | #7 Unit test | (xem git log) | ✅ xong | **95 test, 0 failure**: service 41, DTO 5, controller validation 27, email 5, integration 17 |
 | 2026-10-05 | #8 Trip log | (xem git log) | ✅ xong | Bảng `vehicle_trips` 15 cột; assign→IN_PROGRESS, return→COMPLETED (+distanceKm, notes), soft-delete→CANCELLED; 2 endpoint; modal lịch sử; **126 test** |
-| | #6 Tách components | — | ⬜ chưa làm | làm CUỐI |
+| 2026-10-05 | #6 Tách components | refactor(vehicle) | ✅ xong | `VehiclePage` 1240 → **146 dòng**; 12 component + 2 hook + `utils/vehicleFormat.ts`; xóa `.gitkeep`; `tsc` exit 0, `npm run build` OK. Còn: verify UI/lucồng bằng tay |
 
 ---
 
