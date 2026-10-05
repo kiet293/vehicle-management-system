@@ -1194,17 +1194,17 @@ refactor(vehicle): extract vehicle page into reusable components
 
 ## 8. CHECKLIST CHUNG TRƯỚC KHI TẠO PULL REQUEST
 
-- [ ] Cả 4 mục #5 #6 #7 #8 đã commit, mỗi mục 1 commit
-- [ ] `docker build -t vms-vehicle-service:verify ./vehicle-service/backend` → BUILD SUCCESS
-- [ ] `cd frontend && npx tsc --noEmit` → exit 0
-- [ ] `docker run --rm -v ... mvn test` → 0 failure (nếu đã làm #7)
-- [ ] Test tay qua Gateway: `docker compose up --build -d` rồi mở http://localhost:5173
-- [ ] Không sửa file ngoài phạm vi mục 0.1
-- [ ] `git log --oneline origin/dev..HEAD` xem lại đúng 4 commit
-- [ ] `git diff --stat origin/dev..HEAD` không có file lạ
-- [ ] Đã cập nhật mục 2 và checkbox trong file này
-- [ ] Push: `git push origin feature/vehicle-service`
-- [ ] Tạo PR: https://github.com/kiet293/vehicle-management-system/pull/new/feature/vehicle-service
+- [x] Cả 4 mục #5 #6 #7 #8 đã commit, mỗi mục 1 commit
+- [x] `docker build -t vms-vehicle-service:verify ./vehicle-service/backend` → BUILD SUCCESS (verify lại sau #6)
+- [x] `cd frontend && npx tsc --noEmit` → exit 0
+- [x] `docker run --rm -v ... mvn test` → **Tests run: 126, Failures: 0, Errors: 0 — BUILD SUCCESS**
+- [ ] Test tay qua Gateway: `docker compose up --build -d` rồi mở http://localhost:5173 — **còn, cần user làm**
+- [x] Không sửa file ngoài phạm vi mục 0.1 (`git diff --name-only origin/dev..HEAD` chỉ có vehicle-service/, frontend/src/modules/vehicle/, `frontend/src/types/index.ts`, `doc/VEHICLE_PLAN.md`)
+- [x] `git log --oneline origin/dev..HEAD` — 7 commit: 2 P0, 1 docs, #5, #7, #8, #6
+- [x] `git diff --stat origin/dev..HEAD` — 43 file, +5734 / −1188, không có file lạ
+- [x] Đã cập nhật mục 2 và checkbox trong file này
+- [x] Push: `git push origin feature/vehicle-service` → `e3f0b79..c56758c`
+- [ ] Tạo PR: https://github.com/kiet293/vehicle-management-system/pull/new/feature/vehicle-service — **còn**
 
 ---
 
