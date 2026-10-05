@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, LoginResponse, ApiResponse } from '../types';
 import apiClient from '../services/api';
+import { RegisterData } from '../modules/user/services/userService';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (username: string, password: string) => Promise<User>;
+  register: (data: RegisterData) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -58,6 +60,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return receivedUser;
   }, []);
 
+  const register = useCallback(async (data: RegisterData): Promise<User> => {
+    const res = await apiClient.post<ApiResponse<LoginResponse>>('/api/auth/register', data);
+    if (!res.data.success || !res.data.data) {
+      throw new Error(res.data.message || 'Đăng ký tài khoản không thành công');
+    }
+
+    const { token: receivedToken, user: receivedUser } = res.data.data;
+    setToken(receivedToken);
+    setUser(receivedUser);
+    return receivedUser;
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -76,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       token,
       login,
+      register,
       logout,
       isAuthenticated,
       isAdmin,

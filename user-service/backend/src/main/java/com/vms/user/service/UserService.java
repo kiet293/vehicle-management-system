@@ -52,6 +52,28 @@ public class UserService {
         return new LoginResponse(token, UserDTO.fromEntity(user));
     }
 
+    @Transactional
+    public LoginResponse register(RegisterRequest request) {
+        if (request.getPassword() == null || request.getPassword().trim().length() < 6) {
+            throw new BadRequestException("Mật khẩu phải có tối thiểu 6 ký tự");
+        }
+        CreateUserRequest createReq = CreateUserRequest.builder()
+                .username(request.getUsername())
+                .password(request.getPassword())
+                .fullName(request.getFullName())
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .role(request.getRole() != null ? request.getRole() : Role.DRIVER)
+                .driverLicenseNumber(request.getDriverLicenseNumber())
+                .driverLicenseClass(request.getDriverLicenseClass())
+                .build();
+        UserDTO userDTO = createUser(createReq);
+        User user = userRepository.findById(userDTO.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng vừa tạo"));
+        String token = jwtTokenProvider.generateToken(user);
+        return new LoginResponse(token, userDTO);
+    }
+
     public UserDTO getCurrentUser(String tokenHeader) {
         if (tokenHeader == null || !tokenHeader.startsWith("Bearer ")) {
             throw new UnauthorizedException("Phiên làm việc không hợp lệ hoặc đã hết hạn.");
