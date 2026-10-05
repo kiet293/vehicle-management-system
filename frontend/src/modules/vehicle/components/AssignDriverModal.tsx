@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Modal } from '../../../components/common/Modal';
 import { User, Vehicle } from '../../../types';
+import { DriversStatus } from '../hooks/useVehicleActions';
 
 interface AssignDriverModalProps {
   isOpen: boolean;
   onClose: () => void;
   vehicle: Vehicle | null;
   drivers: User[];
+  driversStatus: DriversStatus;
+  onRetryDrivers: () => void;
   onAssign: (driverId: number, driverName: string, driverEmail?: string) => Promise<void>;
 }
 
@@ -15,6 +18,8 @@ export const AssignDriverModal: React.FC<AssignDriverModalProps> = ({
   onClose,
   vehicle,
   drivers,
+  driversStatus,
+  onRetryDrivers,
   onAssign,
 }) => {
   const [selectedDriverId, setSelectedDriverId] = useState<number | ''>('');
@@ -55,7 +60,40 @@ export const AssignDriverModal: React.FC<AssignDriverModalProps> = ({
 
         <div className="form-group">
           <label className="form-label">Chọn tài xế phụ trách</label>
-          {drivers.length === 0 ? (
+          {driversStatus === 'loading' ? (
+            <div
+              style={{
+                padding: '0.75rem',
+                background: 'rgba(59, 130, 246, 0.08)',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                color: 'var(--accent-blue, #3b82f6)',
+                borderRadius: '10px',
+                fontSize: '0.8125rem',
+              }}
+            >
+              Đang tải danh sách tài xế...
+            </div>
+          ) : driversStatus === 'error' ? (
+            <div
+              style={{
+                padding: '0.75rem',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '10px',
+                fontSize: '0.8125rem',
+                color: '#f87171',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.75rem',
+              }}
+            >
+              <span>Không thể tải danh sách tài xế từ máy chủ. Vui lòng thử lại.</span>
+              <button type="button" onClick={onRetryDrivers} className="btn btn-secondary btn-sm">
+                Thử lại
+              </button>
+            </div>
+          ) : drivers.length === 0 ? (
             <div style={{ padding: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', color: 'var(--accent-amber)', borderRadius: '10px', fontSize: '0.8125rem' }}>
               Hiện không có tài xế nào sẵn sàng. Vui lòng kiểm tra lại lịch trình nhân sự.
             </div>
@@ -83,7 +121,7 @@ export const AssignDriverModal: React.FC<AssignDriverModalProps> = ({
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isSubmitting || drivers.length === 0 || !selectedDriverId}
+            disabled={isSubmitting || driversStatus !== 'ready' || drivers.length === 0 || !selectedDriverId}
           >
             {isSubmitting ? 'Đang bàn giao...' : 'Xác nhận bàn giao'}
           </button>

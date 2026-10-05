@@ -99,11 +99,11 @@ export const VehicleRowActions: React.FC<VehicleRowActionsProps> = ({
       </button>
     )}
 
-    {!compact && !isDriver && vehicle.status !== 'DECOMMISSIONED' && (
+    {!isDriver && vehicle.status !== 'DECOMMISSIONED' && (
       <button
         onClick={() => onDelete(vehicle)}
         className="btn btn-danger btn-icon"
-        style={{ width: '32px', height: '32px' }}
+        style={compact ? undefined : { width: '32px', height: '32px' }}
         title="Ngừng khai thác"
       >
         <Trash2 size={14} />

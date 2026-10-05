@@ -23,16 +23,25 @@ export const useVehicleFleet = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const loadBrands = async () => {
-      try {
-        setBrands(await vehicleService.getBrands());
-      } catch {
-        setBrands([]);
-      }
-    };
-    loadBrands();
+  const loadBrands = useCallback(async () => {
+    try {
+      setBrands(await vehicleService.getBrands());
+    } catch {
+      // Keep the last known list on failure so the dropdown never goes blank
+    }
   }, []);
+
+  useEffect(() => {
+    void loadBrands();
+  }, [loadBrands]);
+
+  // If the selected brand disappears (e.g. its last vehicle was deleted or
+  // renamed), reset the filter so the dropdown never shows a stale value.
+  useEffect(() => {
+    if (brandFilter !== 'ALL' && !brands.includes(brandFilter)) {
+      setBrandFilter('ALL');
+    }
+  }, [brands, brandFilter]);
 
   const fetchVehicles = useCallback(async () => {
     setIsLoading(true);
@@ -78,6 +87,7 @@ export const useVehicleFleet = () => {
     brandFilter,
     setBrandFilter,
     brands,
+    loadBrands,
     viewMode,
     setViewMode,
     clearFilters,

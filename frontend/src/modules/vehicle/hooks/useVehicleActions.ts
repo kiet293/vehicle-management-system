@@ -12,6 +12,15 @@ const extractErrorMessage = (err: unknown, fallback: string): string => {
   return fallback;
 };
 
+/**
+ * Lifecycle of the driver list loaded for the assign modal:
+ * - `idle`: modal not opened yet
+ * - `loading`: request in flight
+ * - `ready`: list loaded (may still be empty)
+ * - `error`: request failed (user-service unreachable) — show retry instead of "no drivers"
+ */
+export type DriversStatus = 'idle' | 'loading' | 'ready' | 'error';
+
 export const useVehicleActions = (onChanged: () => void) => {
   const { showToast } = useToast();
 
@@ -23,6 +32,7 @@ export const useVehicleActions = (onChanged: () => void) => {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [deletingVehicle, setDeletingVehicle] = useState<Vehicle | null>(null);
   const [availableDrivers, setAvailableDrivers] = useState<User[]>([]);
+  const [driversStatus, setDriversStatus] = useState<DriversStatus>('idle');
 
   const openAddModal = () => setIsAddModalOpen(true);
   const closeAddModal = () => setIsAddModalOpen(false);
@@ -33,14 +43,21 @@ export const useVehicleActions = (onChanged: () => void) => {
   };
   const closeEditModal = () => setIsEditModalOpen(false);
 
-  const openAssignModal = async (v: Vehicle) => {
-    setSelectedVehicle(v);
-    setIsAssignModalOpen(true);
+  const loadDrivers = async () => {
+    setDriversStatus('loading');
     try {
       setAvailableDrivers(await userService.getAvailableDrivers());
+      setDriversStatus('ready');
     } catch {
       setAvailableDrivers([]);
+      setDriversStatus('error');
     }
+  };
+
+  const openAssignModal = (v: Vehicle) => {
+    setSelectedVehicle(v);
+    setIsAssignModalOpen(true);
+    void loadDrivers();
   };
   const closeAssignModal = () => setIsAssignModalOpen(false);
 
@@ -74,8 +91,8 @@ export const useVehicleActions = (onChanged: () => void) => {
       showToast('success', `Cập nhật thông tin xe ${selectedVehicle.licensePlate} thành công!`);
       setIsEditModalOpen(false);
       onChanged();
-    } catch {
-      showToast('error', 'Không thể cập nhật thông tin xe');
+    } catch (err: unknown) {
+      showToast('error', extractErrorMessage(err, 'Không thể cập nhật thông tin xe'));
     }
   };
 
@@ -138,6 +155,8 @@ export const useVehicleActions = (onChanged: () => void) => {
     selectedVehicle,
     deletingVehicle,
     availableDrivers,
+    driversStatus,
+    reloadDrivers: loadDrivers,
     openAddModal,
     closeAddModal,
     openEditModal,

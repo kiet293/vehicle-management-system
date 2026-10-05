@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Car, Search } from 'lucide-react';
 import { Vehicle } from '../../../types';
 import { useAuth } from '../../../context/AuthContext';
@@ -37,9 +37,17 @@ export const VehiclePage: React.FC = () => {
     setViewMode,
     clearFilters,
     hasActiveFilter,
+    loadBrands,
   } = useVehicleFleet();
 
-  const actions = useVehicleActions(fetchVehicles);
+  // Refresh both the vehicle list and the brand dropdown after any mutation
+  // so a newly created / renamed / deleted brand is reflected immediately.
+  const refreshAll = useCallback(() => {
+    void fetchVehicles();
+    void loadBrands();
+  }, [fetchVehicles, loadBrands]);
+
+  const actions = useVehicleActions(refreshAll);
 
   const rowActionProps = {
     isDriver,
@@ -53,7 +61,7 @@ export const VehiclePage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <ErrorBanner message={errorBanner} onRetry={fetchVehicles} />
+      <ErrorBanner message={errorBanner} onRetry={refreshAll} />
 
       <VehiclePageHeader canAdd={!isDriver} onAdd={actions.openAddModal} />
 
@@ -131,6 +139,8 @@ export const VehiclePage: React.FC = () => {
         onClose={actions.closeAssignModal}
         vehicle={actions.selectedVehicle}
         drivers={actions.availableDrivers}
+        driversStatus={actions.driversStatus}
+        onRetryDrivers={actions.reloadDrivers}
         onAssign={actions.handleAssign}
       />
 
