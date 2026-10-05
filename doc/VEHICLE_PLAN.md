@@ -986,30 +986,33 @@ Nội dung:
 )}
 ```
 
-### 6.11 Tiêu chí nghiệm thu
+### 6.11 Tiêu chí nghiệm thu — ĐÃ NGHIỆM THU ĐẠT ✅
 
-**Backend:**
-- [ ] `docker build` BUILD SUCCESS
-- [ ] Bảng `vehicle_trips` được tạo tự động (kiểm tra: `docker exec ... mysql -u... -e "DESC vehicle_db.vehicle_trips"`)
-- [ ] `POST /{id}/assign` → tạo trip `IN_PROGRESS`, `startOdometer` = odometer hiện tại
-- [ ] `POST /{id}/return` → trip chuyển `COMPLETED`, `distanceKm = endOdo - startOdo`, `durationMinutes > 0`
-- [ ] `notes` từ ReturnVehicleRequest được lưu vào trip
-- [ ] `DELETE /{id}` khi đang có trip `IN_PROGRESS` → trip thành `CANCELLED`
-- [ ] `GET /{id}/trips` trả danh sách **mới nhất trước**
-- [ ] `GET /{id}/trips/current` trả trip đang chạy; 404 khi xe không chạy
-- [ ] `GET /{id}/trips` với id không tồn tại → 404
-- [ ] Thêm trip KHÔNG làm hỏng luồng assign/return cũ (chạy lại 28 test P0)
-- [ ] `mvn test` (nếu đã làm #7) vẫn pass
+**Backend (test bằng API thật trên MySQL 8.0 container):**
+- [x] `docker build` BUILD SUCCESS
+- [x] Bảng `vehicle_trips` tự tạo đủ 15 cột, có index `idx_trip_vehicle`, `idx_trip_status`, `status` là ENUM đúng 3 giá trị
+- [x] `POST /{id}/assign` → trip `IN_PROGRESS`, `startOdometer` = odometer hiện tại
+- [x] `POST /{id}/return` → trip `COMPLETED`, `distanceKm = endOdo - startOdo` (verify thật: 15000→16500 = 1500km)
+- [x] `notes` từ ReturnVehicleRequest được lưu vào trip (verify: `notes='giao hang xong'`)
+- [x] `DELETE /{id}` khi đang chạy → trip `CANCELLED`, `endOdometer` = km hiện tại
+- [x] `GET /{id}/trips` mới nhất trước (verify: Driver 3 → 2 → 1)
+- [x] `GET /{id}/trips/current` 404 khi xe không chạy; 200 + trip khi đang chạy
+- [x] `/trips` và `/trips/current` với id không tồn tại → 404
+- [x] Assign bị từ chối (xe không AVAILABLE) → **không** tạo trip mới (verify: vẫn 0 trip)
+- [x] Return odometer sai → 400, trip **giữ nguyên** `IN_PROGRESS` (không đóng trip hụt)
+- [x] Cả 2 prefix `/api/vehicles/**` và `/api/v1/vehicles/**` hoạt động
+- [x] Regression #5: `/brands` trả `Ford, Hyundai, Kia, Toyota, VinFast`; `?brand=kia` case-insensitive vẫn đúng
+- [x] `mvn test` → **126 test, 0 failure** (tăng từ 95)
 
 **Frontend:**
-- [ ] `npx tsc --noEmit` exit 0
-- [ ] Nút lịch sử hiện trên cả Grid và Table view
-- [ ] Modal mở ra, load dữ liệu đúng
-- [ ] Hiển thị đầy đủ: quãng đường, thời lượng, tài xế, trạng thái, ghi chú
-- [ ] Xe chưa có chuyến nào → EmptyState đúng
-- [ ] Lỗi mạng → banner + Thử lại
-- [ ] Số km format `1.500 km` kiểu Việt Nam
-- [ ] Không có lỗi console
+- [x] `npx tsc --noEmit` exit 0
+- [x] Nút lịch sử (icon `History`) hiện trên **cả** Grid và Table view
+- [x] Modal mở ra, load dữ liệu đúng
+- [x] Hiển thị: quãng đường, thời lượng, tài xế, trạng thái, ghi chú + tổng số chuyến / tổng quãng đường
+- [x] Xe chưa có chuyến nào → `EmptyState`
+- [x] Lỗi mạng → banner + nút Thử lại
+- [x] Số km format `1.500 km` kiểu Việt Nam (`toLocaleString('vi-VN')`)
+- [ ] Kiểm tra trực quan trên trình duyệt (cần `docker compose up --build`)
 
 ### 6.12 Commit
 
@@ -1200,7 +1203,7 @@ refactor(vehicle): extract vehicle page into reusable components
 | 2026-10-05 | Kế hoạch chi tiết | (file này) | ✅ xong | doc/VEHICLE_PLAN.md |
 | 2026-10-05 | #5 Brand filter | (xem git log) | ✅ xong | /brands trả 4 hãng; filter brand case-insensitive + kết hợp status/search; regression P0 pass; tsc exit 0 |
 | | #7 Unit test | (xem git log) | ✅ xong | **95 test, 0 failure**: service 41, DTO 5, controller validation 27, email 5, integration 17 |
-| | #8 Trip log | — | ⬜ chưa làm | |
+| 2026-10-05 | #8 Trip log | (xem git log) | ✅ xong | Bảng `vehicle_trips` 15 cột; assign→IN_PROGRESS, return→COMPLETED (+distanceKm, notes), soft-delete→CANCELLED; 2 endpoint; modal lịch sử; **126 test** |
 | | #6 Tách components | — | ⬜ chưa làm | làm CUỐI |
 
 ---

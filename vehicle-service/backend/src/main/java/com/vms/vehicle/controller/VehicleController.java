@@ -33,6 +33,21 @@ public class VehicleController {
         return ResponseEntity.ok(ApiResponse.success(vehicleService.getBrands()));
     }
 
+    @GetMapping("/{id}/trips")
+    public ResponseEntity<ApiResponse<List<VehicleTripDTO>>> getTripsByVehicle(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(vehicleService.getTripsByVehicle(id)));
+    }
+
+    @GetMapping("/{id}/trips/current")
+    public ResponseEntity<ApiResponse<VehicleTripDTO>> getCurrentTrip(@PathVariable Long id) {
+        VehicleTripDTO trip = vehicleService.getCurrentTrip(id);
+        if (trip == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Xe hiện không có chuyến đi nào đang chạy"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(trip));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<VehicleDTO>> getVehicleById(@PathVariable Long id) {
         VehicleDTO dto = vehicleService.getVehicleById(id);

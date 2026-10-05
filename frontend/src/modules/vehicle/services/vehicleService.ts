@@ -1,5 +1,5 @@
 import apiClient from '../../../services/api';
-import { Vehicle, ApiResponse, VehicleStatus, VehicleType } from '../../../types';
+import { Vehicle, ApiResponse, VehicleStatus, VehicleTrip, VehicleType } from '../../../types';
 
 export interface CreateVehicleData {
   licensePlate: string;
@@ -75,6 +75,16 @@ export const vehicleService = {
 
   updateStatus: async (id: number, status: VehicleStatus): Promise<Vehicle> => {
     const res = await apiClient.put<ApiResponse<Vehicle>>(`/api/vehicles/${id}/status`, { status });
+    return res.data.data;
+  },
+
+  getTrips: async (vehicleId: number): Promise<VehicleTrip[]> => {
+    const res = await apiClient.get<ApiResponse<VehicleTrip[]>>(`/api/vehicles/${vehicleId}/trips`);
+    return res.data.data || [];
+  },
+
+  getCurrentTrip: async (vehicleId: number): Promise<VehicleTrip> => {
+    const res = await apiClient.get<ApiResponse<VehicleTrip>>(`/api/vehicles/${vehicleId}/trips/current`);
     return res.data.data;
   },
 };

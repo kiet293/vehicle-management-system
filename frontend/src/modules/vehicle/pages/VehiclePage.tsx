@@ -25,7 +25,9 @@ import {
   Clock,
   Send,
   ArrowRight,
+  History,
 } from 'lucide-react';
+import { VehicleTripHistoryModal } from '../components/VehicleTripHistoryModal';
 
 export const VehiclePage: React.FC = () => {
   const { showToast } = useToast();
@@ -71,6 +73,7 @@ export const VehiclePage: React.FC = () => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [deletingVehicle, setDeletingVehicle] = useState<Vehicle | null>(null);
+  const [isTripHistoryOpen, setIsTripHistoryOpen] = useState(false);
 
   // Selected vehicle for action
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
@@ -182,6 +185,11 @@ export const VehiclePage: React.FC = () => {
     setKmError(null);
     setKmWarning(null);
     setIsReturnModalOpen(true);
+  };
+
+  const openTripHistoryModal = (v: Vehicle) => {
+    setSelectedVehicle(v);
+    setIsTripHistoryOpen(true);
   };
 
   const handleReturnKmChange = (valStr: string) => {
@@ -684,6 +692,15 @@ export const VehiclePage: React.FC = () => {
                     </button>
                   )}
 
+                  <button
+                    onClick={() => openTripHistoryModal(v)}
+                    className="btn btn-secondary btn-icon"
+                    style={{ width: '32px', height: '32px' }}
+                    title="Nhật ký hành trình"
+                  >
+                    <History size={14} />
+                  </button>
+
                   {!isDriver && (
                     <button
                       onClick={() => openEditModal(v)}
@@ -783,6 +800,13 @@ export const VehiclePage: React.FC = () => {
                           Xong BD
                         </button>
                       )}
+                      <button
+                        onClick={() => openTripHistoryModal(v)}
+                        className="btn btn-secondary btn-icon"
+                        title="Nhật ký hành trình"
+                      >
+                        <History size={14} />
+                      </button>
                       {!isDriver && (
                         <button
                           onClick={() => openEditModal(v)}
@@ -1198,6 +1222,15 @@ export const VehiclePage: React.FC = () => {
           message={`Bạn có chắc chắn muốn ngừng khai thác phương tiện ${deletingVehicle.licensePlate} (${deletingVehicle.brand} ${deletingVehicle.model})? Trạng thái xe sẽ chuyển sang DECOMMISSIONED để bảo toàn dữ liệu tài chính lịch sử.`}
           confirmText="Xác nhận ngừng khai thác"
           isDangerous={true}
+        />
+      )}
+
+      {/* Trip History Modal */}
+      {selectedVehicle && (
+        <VehicleTripHistoryModal
+          isOpen={isTripHistoryOpen}
+          onClose={() => setIsTripHistoryOpen(false)}
+          vehicle={selectedVehicle}
         />
       )}
     </div>

@@ -1,10 +1,13 @@
 package com.vms.vehicle.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vms.vehicle.entity.TripStatus;
 import com.vms.vehicle.entity.Vehicle;
 import com.vms.vehicle.entity.VehicleStatus;
 import com.vms.vehicle.entity.VehicleType;
+import com.vms.vehicle.entity.VehicleTrip;
 import com.vms.vehicle.repository.VehicleRepository;
+import com.vms.vehicle.repository.VehicleTripRepository;
 import com.vms.vehicle.service.EmailClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -54,6 +57,9 @@ class VehicleApiIntegrationTest {
     private VehicleRepository vehicleRepository;
 
     @Autowired
+    private VehicleTripRepository vehicleTripRepository;
+
+    @Autowired
     private DataSource dataSource;
 
     @MockBean
@@ -61,6 +67,7 @@ class VehicleApiIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        vehicleTripRepository.deleteAll();
         vehicleRepository.deleteAll();
     }
 
@@ -436,6 +443,178 @@ class VehicleApiIntegrationTest {
             mockMvc.perform(get("/api/vehicles/{id}", id))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.maintenanceDue").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("Trip log")
+    class TripLog {
+
+        @Test
+        @DisplayName("returns 404 for the current trip when the vehicle never ran")
+        void currentTripReturns404WhenIdle() throws Exception {
+            Long id = createVehicle("29A-888.88", "Toyota", "Camry", 15000);
+
+            mockMvc.perform(get("/api/vehicles/{id}/trips/current", id))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false));
+        }
+
+        @Test
+        @DisplayName("returns 404 for the current trip of an unknown vehicle")
+        void currentTripReturns404ForUnknownVehicle() throws Exception {
+            mockMvc.perform(get("/api/vehicles/{id}/trips/current", 999999))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("returns 404 for the trip history of an unknown vehicle")
+        void tripsReturn404ForUnknownVehicle() throws Exception {
+            mockMvc.perform(get("/api/vehicles/{id}/trips", 999999))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("returns an empty history for a vehicle that never ran")
+        void emptyHistoryForNewVehicle() throws Exception {
+            Long id = createVehicle("29A-888.88", "Toyota", "Camry", 15000);
+
+            mockMvc.perform(get("/api/vehicles/{id}/trips", id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(0));
+        }
+
+        @Test
+        @DisplayName("opens a trip on assign and closes it on return")
+        void tripLifecycle() throws Exception {
+            Long id = createVehicle("29A-888.88", "Toyota", "Camry", 15000);
+
+            mockMvc.perform(post("/api/vehicles/{id}/assign", id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"driverId\": 9, \"driverName\": \"Nguyen Van An\"}"))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/api/vehicles/{id}/trips/current", id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
+                    .andExpect(jsonPath("$.data.driverName").value("Nguyen Van An"))
+                    .andExpect(jsonPath("$.data.startOdometer").value(15000))
+                    .andExpect(jsonPath("$.data.endOdometer").doesNotExist());
+
+            mockMvc.perform(post("/api/vehicles/{id}/return", id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"newOdometer\": 16500, \"notes\": \"giao xong\"}"))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/api/vehicles/{id}/trips/current", id))
+                    .andExpect(status().isNotFound());
+
+            mockMvc.perform(get("/api/vehicles/{id}/trips", id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.data[0].status").value("COMPLETED"))
+                    .andExpect(jsonPath("$.data[0].startOdometer").value(15000))
+                    .andExpect(jsonPath("$.data[0].endOdometer").value(16500))
+                    .andExpect(jsonPath("$.data[0].distanceKm").value(1500))
+                    .andExpect(jsonPath("$.data[0].notes").value("giao xong"));
+        }
+
+        @Test
+        @DisplayName("keeps every dispatch, newest first")
+        void keepsFullHistory() throws Exception {
+            Long id = createVehicle("29A-888.88", "Toyota", "Camry", 15000);
+
+            for (int leg = 1; leg <= 3; leg++) {
+                mockMvc.perform(post("/api/vehicles/{id}/assign", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"driverId\": 9, \"driverName\": \"Tai xe " + leg + "\"}"))
+                        .andExpect(status().isOk());
+                mockMvc.perform(post("/api/vehicles/{id}/return", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"newOdometer\": " + (15000 + (leg * 100)) + "}"))
+                        .andExpect(status().isOk());
+            }
+
+            mockMvc.perform(get("/api/vehicles/{id}/trips", id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(3))
+                    .andExpect(jsonPath("$.data[0].driverName").value("Tai xe 3"))
+                    .andExpect(jsonPath("$.data[2].driverName").value("Tai xe 1"))
+                    .andExpect(jsonPath("$.data[0].distanceKm").value(100));
+        }
+
+        @Test
+        @DisplayName("cancels the running trip when the vehicle is decommissioned")
+        void cancelsTripOnSoftDelete() throws Exception {
+            Long id = createVehicle("29A-888.88", "Toyota", "Camry", 15000);
+
+            mockMvc.perform(post("/api/vehicles/{id}/assign", id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"driverId\": 9, \"driverName\": \"Nguyen Van An\"}"))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(delete("/api/vehicles/{id}", id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.status").value("DECOMMISSIONED"));
+
+            mockMvc.perform(get("/api/vehicles/{id}/trips", id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[0].status").value("CANCELLED"))
+                    .andExpect(jsonPath("$.data[0].endOdometer").value(15000));
+        }
+
+        @Test
+        @DisplayName("does not open a trip when the assignment is rejected")
+        void noTripWhenAssignRejected() throws Exception {
+            Long id = createVehicle("29A-888.88", "Toyota", "Camry", 15000);
+
+            mockMvc.perform(post("/api/vehicles/{id}/assign", id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"driverId\": 9, \"driverName\": \"Nguyen Van An\"}"))
+                    .andExpect(status().isOk());
+            mockMvc.perform(post("/api/vehicles/{id}/assign", id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"driverId\": 10, \"driverName\": \"Tran Thi B\"}"))
+                    .andExpect(status().isBadRequest());
+
+            mockMvc.perform(get("/api/vehicles/{id}/trips", id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1));
+        }
+
+        @Test
+        @DisplayName("does not record a trip when the returned odometer is invalid")
+        void noTripOnInvalidReturn() throws Exception {
+            Long id = createVehicle("29A-888.88", "Toyota", "Camry", 15000);
+
+            mockMvc.perform(post("/api/vehicles/{id}/assign", id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"driverId\": 9, \"driverName\": \"Nguyen Van An\"}"))
+                    .andExpect(status().isOk());
+            mockMvc.perform(post("/api/vehicles/{id}/return", id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"newOdometer\": 12000}"))
+                    .andExpect(status().isBadRequest());
+
+            mockMvc.perform(get("/api/vehicles/{id}/trips/current", id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"));
+        }
+
+        @Test
+        @DisplayName("snapshots the plate so history survives later renames")
+        void snapshotsLicensePlate() throws Exception {
+            Long id = createVehicle("29A-888.88", "Toyota", "Camry", 15000);
+
+            mockMvc.perform(post("/api/vehicles/{id}/assign", id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"driverId\": 9, \"driverName\": \"Nguyen Van An\"}"))
+                    .andExpect(status().isOk());
+
+            List<VehicleTrip> trips = vehicleTripRepository.findAllByVehicleIdOrderByStartedAtDesc(id);
+            assertThat(trips).hasSize(1);
+            assertThat(trips.get(0).getVehiclePlate()).isEqualTo("29A-888.88");
+            assertThat(trips.get(0).getStatus()).isEqualTo(TripStatus.IN_PROGRESS);
         }
     }
 }

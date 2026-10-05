@@ -1,17 +1,21 @@
 package com.vms.vehicle.service;
 
 import com.vms.vehicle.dto.*;
+import com.vms.vehicle.entity.TripStatus;
 import com.vms.vehicle.entity.Vehicle;
 import com.vms.vehicle.entity.VehicleStatus;
+import com.vms.vehicle.entity.VehicleTrip;
 import com.vms.vehicle.exception.BadRequestException;
 import com.vms.vehicle.exception.ResourceNotFoundException;
 import com.vms.vehicle.repository.VehicleRepository;
 import com.vms.vehicle.repository.VehicleSpecifications;
+import com.vms.vehicle.repository.VehicleTripRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +26,7 @@ import java.util.stream.Collectors;
 public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
+    private final VehicleTripRepository vehicleTripRepository;
     private final EmailClient emailClient;
 
     public List<VehicleDTO> getAllVehicles(VehicleStatus status, String brand, String search) {
@@ -131,6 +136,7 @@ public class VehicleService {
     public VehicleDTO softDeleteVehicle(Long id) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phương tiện với ID: " + id));
+        cancelActiveTrip(vehicle.getId(), vehicle.getCurrentOdometer());
         vehicle.setStatus(VehicleStatus.DECOMMISSIONED);
         Vehicle updated = vehicleRepository.save(vehicle);
         return VehicleDTO.fromEntity(updated);
@@ -150,6 +156,17 @@ public class VehicleService {
         vehicle.setStatus(VehicleStatus.IN_USE);
 
         Vehicle updated = vehicleRepository.save(vehicle);
+
+        // Trip log: open a new in-progress trip for this dispatch
+        vehicleTripRepository.save(VehicleTrip.builder()
+                .vehicleId(vehicle.getId())
+                .vehiclePlate(vehicle.getLicensePlate())
+                .driverId(request.getDriverId())
+                .driverName(request.getDriverName().trim())
+                .startOdometer(vehicle.getCurrentOdometer())
+                .status(TripStatus.IN_PROGRESS)
+                .startedAt(LocalDateTime.now())
+                .build());
 
         // Async notify driver
         if (request.getDriverEmail() != null && !request.getDriverEmail().trim().isEmpty()) {
@@ -175,6 +192,9 @@ public class VehicleService {
         vehicle.setAssignedDriverId(null);
         vehicle.setAssignedDriverName(null);
 
+        // Trip log: close the in-progress trip with the odometer delta and notes
+        closeActiveTrip(vehicle.getId(), request.getNewOdometer(), request.getNotes());
+
         // Check maintenance threshold: every 5000 km
         int kmSinceLastMaintenance = vehicle.getCurrentOdometer() - vehicle.getLastMaintenanceOdometer();
         if (kmSinceLastMaintenance >= 5000) {
@@ -188,6 +208,54 @@ public class VehicleService {
 
         Vehicle updated = vehicleRepository.save(vehicle);
         return VehicleDTO.fromEntity(updated);
+    }
+
+    /**
+     * Closes the vehicle's in-progress trip, if any. Trip log is auxiliary data:
+     * a failure here must not break the return workflow, so errors are logged.
+     */
+    private void closeActiveTrip(Long vehicleId, Integer endOdometer, String notes) {
+        vehicleTripRepository.findFirstByVehicleIdAndStatusOrderByStartedAtDesc(vehicleId, TripStatus.IN_PROGRESS)
+                .ifPresent(trip -> {
+                    trip.setEndOdometer(endOdometer);
+                    trip.setDistanceKm(endOdometer - trip.getStartOdometer());
+                    trip.setEndedAt(LocalDateTime.now());
+                    trip.setStatus(TripStatus.COMPLETED);
+                    if (notes != null && !notes.trim().isEmpty()) {
+                        trip.setNotes(notes.trim());
+                    }
+                    vehicleTripRepository.save(trip);
+                });
+    }
+
+    private void cancelActiveTrip(Long vehicleId, Integer endOdometer) {
+        vehicleTripRepository.findFirstByVehicleIdAndStatusOrderByStartedAtDesc(vehicleId, TripStatus.IN_PROGRESS)
+                .ifPresent(trip -> {
+                    trip.setStatus(TripStatus.CANCELLED);
+                    trip.setEndedAt(LocalDateTime.now());
+                    trip.setEndOdometer(endOdometer);
+                    trip.setNotes("Xe bị ngừng khai thác trong khi đang chạy chuyến.");
+                    vehicleTripRepository.save(trip);
+                });
+    }
+
+    public List<VehicleTripDTO> getTripsByVehicle(Long vehicleId) {
+        if (!vehicleRepository.existsById(vehicleId)) {
+            throw new ResourceNotFoundException("Không tìm thấy phương tiện với ID: " + vehicleId);
+        }
+        return vehicleTripRepository.findAllByVehicleIdOrderByStartedAtDesc(vehicleId).stream()
+                .map(VehicleTripDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public VehicleTripDTO getCurrentTrip(Long vehicleId) {
+        if (!vehicleRepository.existsById(vehicleId)) {
+            throw new ResourceNotFoundException("Không tìm thấy phương tiện với ID: " + vehicleId);
+        }
+        return vehicleTripRepository
+                .findFirstByVehicleIdAndStatusOrderByStartedAtDesc(vehicleId, TripStatus.IN_PROGRESS)
+                .map(VehicleTripDTO::fromEntity)
+                .orElse(null);
     }
 
     @Transactional

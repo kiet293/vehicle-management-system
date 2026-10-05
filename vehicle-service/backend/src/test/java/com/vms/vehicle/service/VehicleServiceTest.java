@@ -5,12 +5,16 @@ import com.vms.vehicle.dto.CreateVehicleRequest;
 import com.vms.vehicle.dto.ReturnVehicleRequest;
 import com.vms.vehicle.dto.UpdateVehicleRequest;
 import com.vms.vehicle.dto.VehicleDTO;
+import com.vms.vehicle.dto.VehicleTripDTO;
+import com.vms.vehicle.entity.TripStatus;
 import com.vms.vehicle.entity.Vehicle;
 import com.vms.vehicle.entity.VehicleStatus;
 import com.vms.vehicle.entity.VehicleType;
+import com.vms.vehicle.entity.VehicleTrip;
 import com.vms.vehicle.exception.BadRequestException;
 import com.vms.vehicle.exception.ResourceNotFoundException;
 import com.vms.vehicle.repository.VehicleRepository;
+import com.vms.vehicle.repository.VehicleTripRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +52,9 @@ class VehicleServiceTest {
 
     @Mock
     private VehicleRepository vehicleRepository;
+
+    @Mock
+    private VehicleTripRepository vehicleTripRepository;
 
     @Mock
     private EmailClient emailClient;
@@ -111,6 +119,24 @@ class VehicleServiceTest {
 
     private void givenVehicleExists(Vehicle vehicle) {
         when(vehicleRepository.findById(vehicle.getId())).thenReturn(Optional.of(vehicle));
+    }
+
+    private void givenActiveTrip(VehicleTrip trip) {
+        when(vehicleTripRepository.findFirstByVehicleIdAndStatusOrderByStartedAtDesc(
+                VEHICLE_ID, TripStatus.IN_PROGRESS)).thenReturn(Optional.of(trip));
+    }
+
+    private VehicleTrip buildActiveTrip(int startOdometer) {
+        return VehicleTrip.builder()
+                .id(50L)
+                .vehicleId(VEHICLE_ID)
+                .vehiclePlate("29A-888.88")
+                .driverId(9L)
+                .driverName("Nguyen Van An")
+                .startOdometer(startOdometer)
+                .status(TripStatus.IN_PROGRESS)
+                .startedAt(LocalDateTime.now().minusHours(2))
+                .build();
     }
 
     // ------------------------------------------------------------------
@@ -398,6 +424,36 @@ class VehicleServiceTest {
             assertThatThrownBy(() -> vehicleService.assignDriver(99L, buildAssignRequest()))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
+
+        @Test
+        @DisplayName("opens an in-progress trip starting at the current odometer")
+        void opensTripLog() {
+            givenVehicleExists(buildVehicle());
+
+            vehicleService.assignDriver(VEHICLE_ID, buildAssignRequest());
+
+            ArgumentCaptor<VehicleTrip> captor = ArgumentCaptor.forClass(VehicleTrip.class);
+            verify(vehicleTripRepository).save(captor.capture());
+            VehicleTrip trip = captor.getValue();
+            assertThat(trip.getVehicleId()).isEqualTo(VEHICLE_ID);
+            assertThat(trip.getVehiclePlate()).isEqualTo("29A-888.88");
+            assertThat(trip.getDriverId()).isEqualTo(9L);
+            assertThat(trip.getDriverName()).isEqualTo("Nguyen Van An");
+            assertThat(trip.getStartOdometer()).isEqualTo(15000);
+            assertThat(trip.getStatus()).isEqualTo(TripStatus.IN_PROGRESS);
+            assertThat(trip.getStartedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("does not open a trip when the vehicle is rejected")
+        void doesNotOpenTripWhenRejected() {
+            givenVehicleExists(buildVehicle(VehicleStatus.MAINTENANCE, 15000, 15000));
+
+            assertThatThrownBy(() -> vehicleService.assignDriver(VEHICLE_ID, buildAssignRequest()))
+                    .isInstanceOf(BadRequestException.class);
+
+            verify(vehicleTripRepository, never()).save(any(VehicleTrip.class));
+        }
     }
 
     // ------------------------------------------------------------------
@@ -485,6 +541,73 @@ class VehicleServiceTest {
             assertThatThrownBy(() -> vehicleService.returnVehicle(99L, buildReturnRequest(16000)))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
+
+        @Test
+        @DisplayName("closes the active trip with the distance travelled")
+        void closesActiveTripWithDistance() {
+            givenVehicleExists(buildVehicle(VehicleStatus.IN_USE, 15000, 15000));
+            givenActiveTrip(buildActiveTrip(15000));
+
+            vehicleService.returnVehicle(VEHICLE_ID, buildReturnRequest(16500));
+
+            ArgumentCaptor<VehicleTrip> captor = ArgumentCaptor.forClass(VehicleTrip.class);
+            verify(vehicleTripRepository).save(captor.capture());
+            VehicleTrip trip = captor.getValue();
+            assertThat(trip.getStatus()).isEqualTo(TripStatus.COMPLETED);
+            assertThat(trip.getEndOdometer()).isEqualTo(16500);
+            assertThat(trip.getDistanceKm()).isEqualTo(1500);
+            assertThat(trip.getEndedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("stores the return notes on the closed trip")
+        void storesReturnNotes() {
+            givenVehicleExists(buildVehicle(VehicleStatus.IN_USE, 15000, 15000));
+            givenActiveTrip(buildActiveTrip(15000));
+
+            vehicleService.returnVehicle(VEHICLE_ID,
+                    ReturnVehicleRequest.builder().newOdometer(16500).notes("  Tra xe dung han  ").build());
+
+            ArgumentCaptor<VehicleTrip> captor = ArgumentCaptor.forClass(VehicleTrip.class);
+            verify(vehicleTripRepository).save(captor.capture());
+            assertThat(captor.getValue().getNotes()).isEqualTo("Tra xe dung han");
+        }
+
+        @Test
+        @DisplayName("keeps the dispatch notes when no return notes are given")
+        void keepsDispatchNotes() {
+            givenVehicleExists(buildVehicle(VehicleStatus.IN_USE, 15000, 15000));
+            VehicleTrip trip = buildActiveTrip(15000);
+            trip.setNotes("Giao viec giao hang");
+            givenActiveTrip(trip);
+
+            vehicleService.returnVehicle(VEHICLE_ID,
+                    ReturnVehicleRequest.builder().newOdometer(16500).notes("   ").build());
+
+            assertThat(trip.getNotes()).isEqualTo("Giao viec giao hang");
+        }
+
+        @Test
+        @DisplayName("still returns the vehicle when there is no active trip")
+        void worksWithoutActiveTrip() {
+            givenVehicleExists(buildVehicle(VehicleStatus.IN_USE, 15000, 15000));
+
+            VehicleDTO dto = vehicleService.returnVehicle(VEHICLE_ID, buildReturnRequest(16500));
+
+            assertThat(dto.getStatus()).isEqualTo(VehicleStatus.AVAILABLE);
+            verify(vehicleTripRepository, never()).save(any(VehicleTrip.class));
+        }
+
+        @Test
+        @DisplayName("does not touch the trip log when the odometer is rejected")
+        void doesNotTouchTripLogOnInvalidOdometer() {
+            givenVehicleExists(buildVehicle(VehicleStatus.IN_USE, 15000, 15000));
+
+            assertThatThrownBy(() -> vehicleService.returnVehicle(VEHICLE_ID, buildReturnRequest(14000)))
+                    .isInstanceOf(BadRequestException.class);
+
+            verifyNoInteractions(vehicleTripRepository);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -533,6 +656,31 @@ class VehicleServiceTest {
 
             assertThatThrownBy(() -> vehicleService.softDeleteVehicle(99L))
                     .isInstanceOf(ResourceNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("cancels an in-progress trip instead of completing it")
+        void cancelsActiveTrip() {
+            givenVehicleExists(buildVehicle(VehicleStatus.IN_USE, 15000, 15000));
+            givenActiveTrip(buildActiveTrip(15000));
+
+            vehicleService.softDeleteVehicle(VEHICLE_ID);
+
+            ArgumentCaptor<VehicleTrip> captor = ArgumentCaptor.forClass(VehicleTrip.class);
+            verify(vehicleTripRepository).save(captor.capture());
+            assertThat(captor.getValue().getStatus()).isEqualTo(TripStatus.CANCELLED);
+            assertThat(captor.getValue().getEndOdometer()).isEqualTo(15000);
+            assertThat(captor.getValue().getNotes()).contains("ngừng khai thác");
+        }
+
+        @Test
+        @DisplayName("leaves history untouched when no trip is running")
+        void leavesHistoryUntouched() {
+            givenVehicleExists(buildVehicle());
+
+            vehicleService.softDeleteVehicle(VEHICLE_ID);
+
+            verify(vehicleTripRepository, never()).save(any(VehicleTrip.class));
         }
     }
 
@@ -660,6 +808,84 @@ class VehicleServiceTest {
             when(vehicleRepository.findDistinctBrands()).thenReturn(List.of());
 
             assertThat(vehicleService.getBrands()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("trip log")
+    class TripLog {
+
+        @Test
+        @DisplayName("getTripsByVehicle throws when the vehicle does not exist")
+        void getTripsThrowsWhenVehicleMissing() {
+            when(vehicleRepository.existsById(99L)).thenReturn(false);
+
+            assertThatThrownBy(() -> vehicleService.getTripsByVehicle(99L))
+                    .isInstanceOf(ResourceNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("getTripsByVehicle maps the history newest first")
+        void getTripsMapsHistory() {
+            when(vehicleRepository.existsById(VEHICLE_ID)).thenReturn(true);
+            LocalDateTime started = LocalDateTime.of(2024, 5, 1, 8, 0);
+            VehicleTrip older = VehicleTrip.builder()
+                    .id(1L).vehicleId(VEHICLE_ID).vehiclePlate("29A-888.88")
+                    .startOdometer(10000).endOdometer(11000).distanceKm(1000)
+                    .status(TripStatus.COMPLETED)
+                    .startedAt(started).endedAt(started.plusHours(2)).build();
+            VehicleTrip newer = VehicleTrip.builder()
+                    .id(2L).vehicleId(VEHICLE_ID).vehiclePlate("29A-888.88")
+                    .startOdometer(11000).status(TripStatus.IN_PROGRESS)
+                    .startedAt(started.plusDays(1)).build();
+            when(vehicleTripRepository.findAllByVehicleIdOrderByStartedAtDesc(VEHICLE_ID))
+                    .thenReturn(List.of(newer, older));
+
+            List<VehicleTripDTO> result = vehicleService.getTripsByVehicle(VEHICLE_ID);
+
+            assertThat(result).extracting(VehicleTripDTO::getId).containsExactly(2L, 1L);
+            assertThat(result.get(0).getDurationMinutes()).isNull();
+            assertThat(result.get(1).getDurationMinutes()).isEqualTo(120);
+        }
+
+        @Test
+        @DisplayName("getTripsByVehicle returns an empty list when the vehicle never ran")
+        void getTripsReturnsEmptyList() {
+            when(vehicleRepository.existsById(VEHICLE_ID)).thenReturn(true);
+            when(vehicleTripRepository.findAllByVehicleIdOrderByStartedAtDesc(VEHICLE_ID))
+                    .thenReturn(List.of());
+
+            assertThat(vehicleService.getTripsByVehicle(VEHICLE_ID)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("getCurrentTrip returns the running trip")
+        void getCurrentTripReturnsTrip() {
+            when(vehicleRepository.existsById(VEHICLE_ID)).thenReturn(true);
+            givenActiveTrip(buildActiveTrip(15000));
+
+            VehicleTripDTO dto = vehicleService.getCurrentTrip(VEHICLE_ID);
+
+            assertThat(dto).isNotNull();
+            assertThat(dto.getStatus()).isEqualTo(TripStatus.IN_PROGRESS);
+            assertThat(dto.getDriverName()).isEqualTo("Nguyen Van An");
+        }
+
+        @Test
+        @DisplayName("getCurrentTrip returns null when the vehicle is idle")
+        void getCurrentTripReturnsNullWhenIdle() {
+            when(vehicleRepository.existsById(VEHICLE_ID)).thenReturn(true);
+
+            assertThat(vehicleService.getCurrentTrip(VEHICLE_ID)).isNull();
+        }
+
+        @Test
+        @DisplayName("getCurrentTrip throws when the vehicle does not exist")
+        void getCurrentTripThrowsWhenVehicleMissing() {
+            when(vehicleRepository.existsById(99L)).thenReturn(false);
+
+            assertThatThrownBy(() -> vehicleService.getCurrentTrip(99L))
+                    .isInstanceOf(ResourceNotFoundException.class);
         }
     }
 }
