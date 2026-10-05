@@ -39,6 +39,8 @@ export const VehiclePage: React.FC = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<VehicleStatus | 'ALL'>('ALL');
+  const [brandFilter, setBrandFilter] = useState<string>('ALL');
+  const [brands, setBrands] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
 
   // Check URL parameters (e.g., from Dashboard clicked status=MAINTENANCE)
@@ -48,6 +50,19 @@ export const VehiclePage: React.FC = () => {
     if (st && ['AVAILABLE', 'IN_USE', 'MAINTENANCE'].includes(st)) {
       setStatusFilter(st as VehicleStatus);
     }
+  }, []);
+
+  // Load available brands for the filter dropdown (once, independent of other filters)
+  useEffect(() => {
+    const loadBrands = async () => {
+      try {
+        const list = await vehicleService.getBrands();
+        setBrands(list);
+      } catch {
+        setBrands([]);
+      }
+    };
+    loadBrands();
   }, []);
 
   // Modals
@@ -89,7 +104,7 @@ export const VehiclePage: React.FC = () => {
     try {
       const data = await vehicleService.getVehicles(
         statusFilter === 'ALL' ? undefined : statusFilter,
-        undefined,
+        brandFilter === 'ALL' ? undefined : brandFilter,
         search
       );
       setVehicles(data);
@@ -105,7 +120,7 @@ export const VehiclePage: React.FC = () => {
       fetchVehicles();
     }, 300);
     return () => clearTimeout(timer);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, brandFilter]);
 
   const loadDrivers = async () => {
     try {
@@ -434,6 +449,23 @@ export const VehiclePage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+              Hãng xe:
+            </span>
+            <select
+              value={brandFilter}
+              onChange={(e) => setBrandFilter(e.target.value)}
+              className="form-select"
+              style={{ width: 'auto', minWidth: '150px' }}
+            >
+              <option value="ALL">Tất cả hãng</option>
+              {brands.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 600 }}>
               Trạng thái:
             </span>
             <select
@@ -488,7 +520,7 @@ export const VehiclePage: React.FC = () => {
           <TableSkeleton rows={5} columns={7} />
         )
       ) : vehicles.length === 0 ? (
-        search || statusFilter !== 'ALL' ? (
+        search || statusFilter !== 'ALL' || brandFilter !== 'ALL' ? (
           <EmptyState
             icon={<Search size={28} />}
             title="Không tìm thấy phương tiện nào"
@@ -497,6 +529,7 @@ export const VehiclePage: React.FC = () => {
             onAction={() => {
               setSearch('');
               setStatusFilter('ALL');
+              setBrandFilter('ALL');
             }}
           />
         ) : (

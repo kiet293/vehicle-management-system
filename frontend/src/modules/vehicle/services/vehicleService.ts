@@ -31,6 +31,11 @@ export const vehicleService = {
     return res.data.data || [];
   },
 
+  getBrands: async (): Promise<string[]> => {
+    const res = await apiClient.get<ApiResponse<string[]>>('/api/vehicles/brands');
+    return res.data.data || [];
+  },
+
   getVehicleById: async (id: number): Promise<Vehicle> => {
     const res = await apiClient.get<ApiResponse<Vehicle>>(`/api/vehicles/${id}`);
     return res.data.data;

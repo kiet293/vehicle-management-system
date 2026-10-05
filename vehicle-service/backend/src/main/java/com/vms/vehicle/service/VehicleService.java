@@ -31,6 +31,10 @@ public class VehicleService {
                 .collect(Collectors.toList());
     }
 
+    public List<String> getBrands() {
+        return vehicleRepository.findDistinctBrands();
+    }
+
     public VehicleDTO getVehicleById(Long id) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phương tiện với ID: " + id));

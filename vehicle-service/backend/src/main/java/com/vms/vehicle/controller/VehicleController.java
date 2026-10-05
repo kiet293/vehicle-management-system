@@ -28,6 +28,11 @@ public class VehicleController {
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 
+    @GetMapping("/brands")
+    public ResponseEntity<ApiResponse<List<String>>> getBrands() {
+        return ResponseEntity.ok(ApiResponse.success(vehicleService.getBrands()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<VehicleDTO>> getVehicleById(@PathVariable Long id) {
         VehicleDTO dto = vehicleService.getVehicleById(id);
