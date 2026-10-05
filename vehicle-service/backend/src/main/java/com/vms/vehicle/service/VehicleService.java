@@ -6,6 +6,7 @@ import com.vms.vehicle.entity.VehicleStatus;
 import com.vms.vehicle.exception.BadRequestException;
 import com.vms.vehicle.exception.ResourceNotFoundException;
 import com.vms.vehicle.repository.VehicleRepository;
+import com.vms.vehicle.repository.VehicleSpecifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,18 +25,7 @@ public class VehicleService {
     private final EmailClient emailClient;
 
     public List<VehicleDTO> getAllVehicles(VehicleStatus status, String brand, String search) {
-        List<Vehicle> list = vehicleRepository.findAll();
-        return list.stream()
-                .filter(v -> status == null || v.getStatus() == status)
-                .filter(v -> brand == null || brand.trim().isEmpty() || v.getBrand().equalsIgnoreCase(brand.trim()))
-                .filter(v -> {
-                    if (search == null || search.trim().isEmpty()) return true;
-                    String s = search.trim().toLowerCase();
-                    return (v.getLicensePlate() != null && v.getLicensePlate().toLowerCase().contains(s)) ||
-                            (v.getBrand() != null && v.getBrand().toLowerCase().contains(s)) ||
-                            (v.getModel() != null && v.getModel().toLowerCase().contains(s)) ||
-                            (v.getAssignedDriverName() != null && v.getAssignedDriverName().toLowerCase().contains(s));
-                })
+        return vehicleRepository.findAll(VehicleSpecifications.filterBy(status, brand, search)).stream()
                 .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
                 .map(VehicleDTO::fromEntity)
                 .collect(Collectors.toList());
@@ -65,27 +55,15 @@ public class VehicleService {
 
     @Transactional
     public VehicleDTO createVehicle(CreateVehicleRequest request) {
-        if (request.getLicensePlate() == null || request.getLicensePlate().trim().isEmpty()) {
-            throw new BadRequestException("Biển số xe không được để trống");
-        }
         String normalizedPlate = normalizePlate(request.getLicensePlate());
         if (vehicleRepository.existsByLicensePlate(normalizedPlate)) {
             throw new BadRequestException("Biển số xe này đã được đăng ký trong hệ thống");
         }
-        if (request.getBrand() == null || request.getBrand().trim().isEmpty()) {
-            throw new BadRequestException("Hãng xe không được để trống");
-        }
-        if (request.getModel() == null || request.getModel().trim().isEmpty()) {
-            throw new BadRequestException("Dòng xe không được để trống");
-        }
         int currentYear = Year.now().getValue();
-        if (request.getManufactureYear() == null || request.getManufactureYear() < 1990 || request.getManufactureYear() > currentYear) {
-            throw new BadRequestException("Năm sản xuất phải từ năm 1990 đến năm " + currentYear);
+        if (request.getManufactureYear() > currentYear) {
+            throw new BadRequestException("Năm sản xuất không được vượt quá năm " + currentYear);
         }
-        if (request.getSeatCapacity() == null || request.getSeatCapacity() <= 0) {
-            throw new BadRequestException("Số chỗ ngồi phải là số nguyên dương lớn hơn 0");
-        }
-        int initialKm = (request.getInitialOdometer() != null && request.getInitialOdometer() >= 0) ? request.getInitialOdometer() : 0;
+        int initialKm = request.getInitialOdometer() != null ? request.getInitialOdometer() : 0;
 
         Vehicle vehicle = Vehicle.builder()
                 .licensePlate(normalizedPlate)
@@ -118,16 +96,23 @@ public class VehicleService {
         if (request.getVehicleType() != null) {
             vehicle.setVehicleType(request.getVehicleType());
         }
-        if (request.getSeatCapacity() != null && request.getSeatCapacity() > 0) {
+        if (request.getSeatCapacity() != null) {
             vehicle.setSeatCapacity(request.getSeatCapacity());
         }
-        if (request.getManufactureYear() != null && request.getManufactureYear() >= 1990) {
+        if (request.getManufactureYear() != null) {
+            int currentYear = Year.now().getValue();
+            if (request.getManufactureYear() > currentYear) {
+                throw new BadRequestException("Năm sản xuất không được vượt quá năm " + currentYear);
+            }
             vehicle.setManufactureYear(request.getManufactureYear());
         }
-        if (request.getCurrentOdometer() != null && request.getCurrentOdometer() >= 0) {
+        if (request.getCurrentOdometer() != null) {
             vehicle.setCurrentOdometer(request.getCurrentOdometer());
         }
-        if (request.getLastMaintenanceOdometer() != null && request.getLastMaintenanceOdometer() >= 0) {
+        if (request.getLastMaintenanceOdometer() != null) {
+            if (request.getLastMaintenanceOdometer() > vehicle.getCurrentOdometer()) {
+                throw new BadRequestException("Số km bảo dưỡng gần nhất không được lớn hơn số km hiện tại của xe");
+            }
             vehicle.setLastMaintenanceOdometer(request.getLastMaintenanceOdometer());
         }
         if (request.getImageUrl() != null) {
@@ -152,8 +137,8 @@ public class VehicleService {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phương tiện với ID: " + id));
 
-        if (request.getDriverId() == null || request.getDriverName() == null || request.getDriverName().trim().isEmpty()) {
-            throw new BadRequestException("Vui lòng chọn tài xế bàn giao hợp lệ");
+        if (vehicle.getStatus() != VehicleStatus.AVAILABLE) {
+            throw new BadRequestException("Chỉ xe đang ở trạng thái SẴN SÀNG mới có thể bàn giao cho tài xế");
         }
 
         vehicle.setAssignedDriverId(request.getDriverId());
@@ -174,10 +159,6 @@ public class VehicleService {
     public VehicleDTO returnVehicle(Long id, ReturnVehicleRequest request) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phương tiện với ID: " + id));
-
-        if (request.getNewOdometer() == null) {
-            throw new BadRequestException("Vui lòng nhập chỉ số công-tơ-mét hiện tại");
-        }
 
         if (request.getNewOdometer() < vehicle.getCurrentOdometer()) {
             throw new BadRequestException(String.format(
