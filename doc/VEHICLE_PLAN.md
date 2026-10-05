@@ -376,27 +376,25 @@ Test cho `VehicleService` — lớp chứa toàn bộ nghiệp vụ. Dùng Mocki
 ### 5.3 Thư mục cần tạo
 
 ```
-vehicle-service/backend/src/test/java/com/vms/vehicle/
-├── service/
-│   ├── VehicleServiceTest.java
-│   └── VehicleSpecificationsTest.java
-├── dto/
-│   └── VehicleDTOTest.java
-├── controller/
-│   └── VehicleControllerValidationTest.java
-└── integration/
-    └── VehicleApiIntegrationTest.java
+vehicle-service/backend/src/test/
+├── resources/
+│   └── application-test.yml            # H2 in-memory, ddl-auto create-drop, email url -> localhost:1
+└── java/com/vms/vehicle/
+    ├── service/
+    │   ├── VehicleServiceTest.java      # 41 test — Mockito thuần, không cần DB
+    │   └── EmailClientTest.java         #  5 test — fault isolation
+    ├── dto/
+    │   └── VehicleDTOTest.java          #  5 test
+    ├── controller/
+    │   └── VehicleControllerValidationTest.java   # 27 test — @WebMvcTest
+    └── integration/
+        └── VehicleApiIntegrationTest.java          # 17 test — @SpringBootTest + H2
 ```
 
 ### 5.4 Dependency cần thêm vào pom.xml
 
+Đã thêm **chỉ 1 dependency** (`mockito-junit-jupiter` KHÔNG cần vì `spring-boot-starter-test` đã kéo sẵn):
 ```xml
-<!-- Mockito cho unit test service -->
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-junit-jupiter</artifactId>
-    <scope>test</scope>
-</dependency>
 <!-- H2 database cho integration test -->
 <dependency>
     <groupId>com.h2database</groupId>
@@ -404,9 +402,8 @@ vehicle-service/backend/src/test/java/com/vms/vehicle/
     <scope>test</scope>
 </dependency>
 ```
-(`spring-boot-starter-test` đã bao gồm JUnit 5, AssertJ, Mockito core, Spring Test — không cần thêm gì nữa.)
 
-### 5.5 Nội dung từng test class
+### 5.5 Nội dung từng test class (thực tế đã implement)
 
 **5.5.1 `VehicleServiceTest.java`** — unit test thuần Mockito
 
@@ -445,7 +442,7 @@ Danh sách test case **bắt buộc có** (map theo rule ở mục 1.3):
 | 10 | `assignDriver_setsInUseAndDriver` | status AVAILABLE | `status == IN_USE`, `assignedDriverName` đúng |
 | 11 | `assignDriver_throwsWhenNotAvailable` | status = MAINTENANCE | `BadRequestException`, msg chứa "SẴN SÀNG" |
 | 12 | `assignDriver_triggersEmailClient` | có driverEmail | verify `emailClient.sendAssignmentNotification(...)` được gọi |
-| 13 | `assignDriver_emailFailureDoesNotThrow` | `emailClient` ném exception | vẫn trả DTO bình thường (fault isolation) |
+| 13 | ~~`assignDriver_emailFailureDoesNotThrow`~~ | — | **ĐÃ BỎ — test sai chỗ, xem `EmailClientTest`** |
 | 14 | `returnVehicle_throwsWhenKmDecreases` | newOdo < currentOdo | `BadRequestException` |
 | 15 | `returnVehicle_clearsDriver` | xe IN_USE có driver | `assignedDriverId` và `assignedDriverName` == null |
 | 16 | `returnVehicle_setsAvailableWhenUnderThreshold` | delta km = 4000 | `status == AVAILABLE` |
@@ -462,10 +459,15 @@ Danh sách test case **bắt buộc có** (map theo rule ở mục 1.3):
 
 **Quy tắc mock bắt buộc** (sai chỗ này test sẽ fail giả):
 ```java
-// Khi service gọi save(), phải trả về chính object đó
-when(vehicleRepository.save(any(Vehicle.class)))
+// Khi service gọi save(), phải trả về chính object đó.
+// PHẢI dùng lenient() vì nhiều test không gọi save() -> UnnecessaryStubbingException
+lenient().when(vehicleRepository.save(any(Vehicle.class)))
     .thenAnswer(invocation -> invocation.getArgument(0));
 ```
+
+⚠️ `assignDriver_emailFailureDoesNotThrow` trong bản kế hoạch là **SAI** — đã bỏ.
+`VehicleService` không try/catch; fault isolation nằm bên trong `EmailClient`.
+Test đúng chỗ là `EmailClientTest.swallowsTransportFailure` (mock `RestTemplate` ném `ResourceAccessException`).
 
 **5.5.2 `VehicleDTOTest.java`**
 | # | Test | Expect |
@@ -476,25 +478,14 @@ when(vehicleRepository.save(any(Vehicle.class)))
 | 4 | `fromEntity_maintenanceDueFalse` | delta = 4999 → false |
 | 5 | `fromEntity_handlesNullDriver` | `assignedDriverId == null` |
 
-**5.5.3 `VehicleSpecificationsTest.java`**
+**5.5.3 ~~`VehicleSpecificationsTest.java`~~ — ĐÃ BỎ (quyết định có chủ ý)**
 
-Test logic filter bằng `Specification` — cách test không cần DB:
-```java
-Specification<Vehicle> spec = VehicleSpecifications.filterBy(VehicleStatus.IN_USE, "Ford", "30H");
+Logic SQL của `VehicleSpecifications` **không test riêng**, vì:
+- Nó là một `Specification` lambda phụ thuộc `CriteriaBuilder` → mock rất rối, giá trị thấp.
+- Đã được cover **đầy đủ và thật** bởi `VehicleApiIntegrationTest$Filtering` (6 test: status, brand case-insensitive, search 4 field, filter kết hợp, distinct brands, sort). Test thật đáng tin hơn test mock.
+- `VehicleServiceTest$GetAllVehicles` verify service có delegate đúng sang `findAll(Specification)`.
 
-// Dùng CriteriaBuilder mock, hoặc verify qua cách đơn giản hơn:
-// Assert spec != null và không throw cho mọi tổ hợp tham số
-@Test void returnsConjunctionWhenNoFilters() {
-    Specification<Vehicle> spec = VehicleSpecifications.filterBy(null, null, null);
-    assertThat(spec).isNotNull();
-}
-
-@Test void handlesBlankStringsAsNoFilter() {
-    Specification<Vehicle> spec = VehicleSpecifications.filterBy(null, "   ", "");
-    assertThat(spec).isNotNull();
-}
-```
-> Nếu test Specification quá khó mock `CriteriaBuilder`, chấp nhận chỉ test "không throw + trả về non-null", phần logic SQL đã verify bằng API test thật ở mục 4.4.
+→ Không tạo file này.
 
 **5.5.4 `VehicleControllerValidationTest.java`** — `@WebMvcTest`
 
@@ -595,14 +586,27 @@ Kết quả mong đợi: `Tests run: 45+, Failures: 0, Errors: 0`
 
 ### 5.7 Tiêu chí nghiệm thu
 
-- [ ] Có thư mục `src/test/java/com/vms/vehicle/`
-- [ ] `VehicleServiceTest` ≥ 26 test case, pass 100%
-- [ ] `VehicleDTOTest` ≥ 5 test case
-- [ ] `VehicleControllerValidationTest` ≥ 11 test case, tất cả trả 400
-- [ ] `VehicleApiIntegrationTest` ≥ 8 test case end-to-end
-- [ ] `mvn test` → `BUILD SUCCESS`, 0 failure
-- [ ] Không test nào phụ thuộc mạng ngoài
-- [ ] Test chạy được trong CI không cần MySQL
+- [x] Có thư mục `src/test/java/com/vms/vehicle/`
+- [x] `VehicleServiceTest` — 41 test, pass 100% (khớp 8 nhóm nghiệp vụ: create/read/update/assign/return/softDelete/updateStatus/filter/brands)
+- [x] `VehicleDTOTest` — 5 test
+- [x] `VehicleControllerValidationTest` — 27 test, mọi case invalid trả 400
+- [x] `EmailClientTest` — 5 test, chứng minh fault isolation nuốt lỗi email
+- [x] `VehicleApiIntegrationTest` — 17 test end-to-end với H2
+- [x] **TỔNG: 95 test, 0 failure, BUILD SUCCESS**
+- [x] Không test nào phụ thuộc mạng ngoài (`emailClient` được `@MockBean`; test profile trỏ `email-service-url` về `localhost:1`)
+- [x] Test chạy được không cần MySQL (`application-test.yml` dùng H2 in-memory, `ddl-auto: create-drop`)
+- [x] `docker build` vẫn BUILD SUCCESS
+
+**Lệnh chạy test (máy không có Maven):**
+```powershell
+docker run --rm -v "${PWD}/vehicle-service/backend:/app" -w /app maven:3.9.9-eclipse-temurin-21 mvn -B test
+```
+
+**Ghi chú khi viết test (tiết kiệm thời gian cho phiên sau):**
+- `VehicleServiceTest.setUp()` stub `save()` dùng `lenient()`, nếu không các test không gọi `save` sẽ fail với `UnnecessaryStubbing`.
+- `@Nested` class + `@BeforeEach` của class cha: stub của class cha áp dụng cho mọi nested class.
+- `getAllVehicles` sắp xếp `id` **giảm dần** → khi assert thứ tự phải tính ngược lại.
+- Fault isolation nằm trong `EmailClient`, **không** phải trong `VehicleService` → test phải mock `RestTemplate` chứ không `doThrow` trên `emailClient`.
 
 ### 5.8 Commit
 
@@ -1195,7 +1199,7 @@ refactor(vehicle): extract vehicle page into reusable components
 | 2026-10-05 | P0 (4 bug) | `c39cb37`, `0458d8c` | ✅ xong | 28 API test pass, tsc exit 0 |
 | 2026-10-05 | Kế hoạch chi tiết | (file này) | ✅ xong | doc/VEHICLE_PLAN.md |
 | 2026-10-05 | #5 Brand filter | (xem git log) | ✅ xong | /brands trả 4 hãng; filter brand case-insensitive + kết hợp status/search; regression P0 pass; tsc exit 0 |
-| | #7 Unit test | — | ⬜ chưa làm | |
+| | #7 Unit test | (xem git log) | ✅ xong | **95 test, 0 failure**: service 41, DTO 5, controller validation 27, email 5, integration 17 |
 | | #8 Trip log | — | ⬜ chưa làm | |
 | | #6 Tách components | — | ⬜ chưa làm | làm CUỐI |
 
