@@ -36,8 +36,10 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<UserDTO>> createUser(@RequestBody CreateUserRequest request) {
-        UserDTO created = userService.createUser(request);
+    public ResponseEntity<ApiResponse<UserDTO>> createUser(
+            @RequestBody CreateUserRequest request,
+            @RequestHeader(value = "Authorization", required = false) String tokenHeader) {
+        UserDTO created = userService.createUser(request, tokenHeader);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Thêm nhân viên " + created.getFullName() + " thành công!", created));
     }
@@ -45,16 +47,18 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<UserDTO>> updateUser(
             @PathVariable Long id,
-            @RequestBody UpdateUserRequest request) {
-        UserDTO updated = userService.updateUser(id, request);
+            @RequestBody UpdateUserRequest request,
+            @RequestHeader(value = "Authorization", required = false) String tokenHeader) {
+        UserDTO updated = userService.updateUser(id, request, tokenHeader);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật thông tin nhân viên thành công!", updated));
     }
 
     @RequestMapping(value = "/{id}/status", method = {RequestMethod.PATCH, RequestMethod.PUT})
     public ResponseEntity<ApiResponse<UserDTO>> updateStatus(
             @PathVariable Long id,
-            @RequestBody UpdateStatusRequest request) {
-        UserDTO updated = userService.updateStatus(id, request.getStatus());
+            @RequestBody UpdateStatusRequest request,
+            @RequestHeader(value = "Authorization", required = false) String tokenHeader) {
+        UserDTO updated = userService.updateStatus(id, request.getStatus(), tokenHeader);
         String msg = updated.getStatus() != null && updated.getStatus().name().equals("LOCKED")
                 ? "Đã khóa tài khoản thành công!"
                 : "Đã kích hoạt tài khoản thành công!";
@@ -62,8 +66,10 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String tokenHeader) {
+        userService.deleteUser(id, tokenHeader);
         return ResponseEntity.ok(ApiResponse.success("Xóa nhân viên thành công!", null));
     }
 
