@@ -1,7 +1,8 @@
 import React from 'react';
-import { Vehicle } from '../../../types';
+import { Vehicle, VehicleStatus } from '../../../types';
 import { StatusBadge } from './StatusBadge';
 import { VehicleRowActions } from './VehicleRowActions';
+import { VehicleStatusMenu } from './VehicleStatusMenu';
 
 interface VehicleDataTableProps {
   vehicles: Vehicle[];
@@ -12,6 +13,7 @@ interface VehicleDataTableProps {
   onEdit: (v: Vehicle) => void;
   onDelete: (v: Vehicle) => void;
   onViewTrips: (v: Vehicle) => void;
+  onChangeStatus: (v: Vehicle, status: VehicleStatus) => void;
 }
 
 export const VehicleDataTable: React.FC<VehicleDataTableProps> = ({
@@ -23,6 +25,7 @@ export const VehicleDataTable: React.FC<VehicleDataTableProps> = ({
   onEdit,
   onDelete,
   onViewTrips,
+  onChangeStatus,
 }) => (
   <div className="data-table-container">
     <table className="data-table">
@@ -64,7 +67,10 @@ export const VehicleDataTable: React.FC<VehicleDataTableProps> = ({
               )}
             </td>
             <td>
-              <StatusBadge status={v.status} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <StatusBadge status={v.status} />
+                {!isDriver && <VehicleStatusMenu vehicle={v} onChangeStatus={onChangeStatus} />}
+              </div>
             </td>
             <td style={{ textAlign: 'right' }}>
               <div style={{ display: 'inline-flex', gap: '0.375rem' }}>

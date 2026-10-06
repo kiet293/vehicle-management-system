@@ -1,9 +1,10 @@
 import React from 'react';
 import { AlertTriangle, Gauge, UserCheck } from 'lucide-react';
-import { Vehicle } from '../../../types';
+import { Vehicle, VehicleStatus } from '../../../types';
 import { FALLBACK_VEHICLE_IMAGE } from '../utils/vehicleFormat';
 import { StatusBadge } from './StatusBadge';
 import { VehicleRowActions } from './VehicleRowActions';
+import { VehicleStatusMenu } from './VehicleStatusMenu';
 
 interface VehicleCardGridProps {
   vehicles: Vehicle[];
@@ -14,6 +15,7 @@ interface VehicleCardGridProps {
   onEdit: (v: Vehicle) => void;
   onDelete: (v: Vehicle) => void;
   onViewTrips: (v: Vehicle) => void;
+  onChangeStatus: (v: Vehicle, status: VehicleStatus) => void;
 }
 
 export const VehicleCardGrid: React.FC<VehicleCardGridProps> = ({
@@ -25,6 +27,7 @@ export const VehicleCardGrid: React.FC<VehicleCardGridProps> = ({
   onEdit,
   onDelete,
   onViewTrips,
+  onChangeStatus,
 }) => (
   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
     {vehicles.map((v) => (
@@ -49,8 +52,9 @@ export const VehicleCardGrid: React.FC<VehicleCardGridProps> = ({
               (e.target as HTMLImageElement).src = FALLBACK_VEHICLE_IMAGE;
             }}
           />
-          <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+          <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <StatusBadge status={v.status} />
+            {!isDriver && <VehicleStatusMenu vehicle={v} onChangeStatus={onChangeStatus} />}
           </div>
           <div
             style={{

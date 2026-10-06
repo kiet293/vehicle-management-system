@@ -57,6 +57,7 @@ export const VehiclePage: React.FC = () => {
     onEdit: actions.openEditModal,
     onDelete: actions.requestDelete,
     onViewTrips: actions.openTripHistoryModal,
+    onChangeStatus: actions.handleChangeStatus,
   };
 
   return (
