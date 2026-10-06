@@ -24,6 +24,24 @@ export interface LoginResponse {
 export type VehicleType = 'SEDAN' | 'SUV' | 'PICKUP' | 'VAN' | 'TRUCK';
 export type VehicleStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'DECOMMISSIONED';
 
+export type TripStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export interface VehicleTrip {
+  id: number;
+  vehicleId: number;
+  vehiclePlate: string;
+  driverId?: number;
+  driverName?: string;
+  startOdometer: number;
+  endOdometer?: number;
+  distanceKm?: number;
+  status: TripStatus;
+  startedAt: string;
+  endedAt?: string;
+  notes?: string;
+  durationMinutes?: number;
+}
+
 export interface Vehicle {
   id: number;
   licensePlate: string;

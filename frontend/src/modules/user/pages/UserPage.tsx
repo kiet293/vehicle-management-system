@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { userService, CreateUserData, UpdateUserData } from '../services/userService';
 import { User, Role } from '../../../types';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
 import { Modal } from '../../../components/common/Modal';
 import { ConfirmModal } from '../../../components/common/ConfirmModal';
 import { TableSkeleton } from '../../../components/common/Skeleton';
@@ -20,6 +21,9 @@ import {
 
 export const UserPage: React.FC = () => {
   const { showToast } = useToast();
+  const { user: currentUser } = useAuth();
+  const isManager = currentUser?.role === 'MANAGER';
+  const isAdmin = currentUser?.role === 'ADMIN';
 
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,6 +89,10 @@ export const UserPage: React.FC = () => {
   };
 
   const openEditModal = (u: User) => {
+    if (isManager && u.role === 'ADMIN') {
+      showToast('error', 'Điều phối viên (MANAGER) không có quyền chỉnh sửa tài khoản Quản trị viên (ADMIN)!');
+      return;
+    }
     setEditingUser(u);
     setFullName(u.fullName);
     setUsername(u.username);
@@ -157,6 +165,15 @@ export const UserPage: React.FC = () => {
       return;
     }
 
+    if (isManager && role === 'ADMIN') {
+      showToast('error', 'Điều phối viên (MANAGER) chỉ có quyền phân quyền Tài xế hoặc Điều phối viên, không được cấp quyền Quản trị viên (ADMIN)!');
+      return;
+    }
+    if (isManager && editingUser?.role === 'ADMIN') {
+      showToast('error', 'Điều phối viên (MANAGER) không có quyền chỉnh sửa tài khoản Quản trị viên (ADMIN)!');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (editingUser) {
@@ -205,6 +222,14 @@ export const UserPage: React.FC = () => {
   };
 
   const handleToggleStatus = (u: User) => {
+    if (isManager && u.role === 'ADMIN') {
+      showToast('error', 'Điều phối viên (MANAGER) không có quyền thay đổi trạng thái tài khoản Quản trị viên (ADMIN)!');
+      return;
+    }
+    if (currentUser?.id === u.id) {
+      showToast('warning', 'Bạn không thể tự khóa tài khoản của chính mình!');
+      return;
+    }
     if (u.status === 'ACTIVE') {
       setLockingUser(u);
     } else {
@@ -214,20 +239,37 @@ export const UserPage: React.FC = () => {
           showToast('success', `Đã mở khóa tài khoản của ${u.fullName}!`);
           fetchUsers();
         })
-        .catch(() => showToast('error', 'Không thể mở khóa tài khoản'));
+        .catch((err: unknown) => {
+          let msg = 'Không thể mở khóa tài khoản';
+          if (err && typeof err === 'object' && 'response' in err) {
+            const res = (err as { response?: { data?: { message?: string } } }).response;
+            if (res?.data?.message) msg = res.data.message;
+          }
+          showToast('error', msg);
+        });
     }
   };
 
   const confirmLock = async () => {
     if (!lockingUser) return;
+    if (isManager && lockingUser.role === 'ADMIN') {
+      showToast('error', 'Điều phối viên (MANAGER) không có quyền khóa tài khoản Quản trị viên (ADMIN)!');
+      setLockingUser(null);
+      return;
+    }
     setIsLocking(true);
     try {
       await userService.updateStatus(lockingUser.id, 'LOCKED');
       showToast('success', `Đã khóa tài khoản của ${lockingUser.fullName}!`);
       setLockingUser(null);
       fetchUsers();
-    } catch {
-      showToast('error', 'Không thể khóa tài khoản');
+    } catch (err: unknown) {
+      let msg = 'Không thể khóa tài khoản';
+      if (err && typeof err === 'object' && 'response' in err) {
+        const res = (err as { response?: { data?: { message?: string } } }).response;
+        if (res?.data?.message) msg = res.data.message;
+      }
+      showToast('error', msg);
     } finally {
       setIsLocking(false);
     }
@@ -408,15 +450,31 @@ export const UserPage: React.FC = () => {
                     <div style={{ display: 'inline-flex', gap: '0.375rem' }}>
                       <button
                         onClick={() => openEditModal(u)}
+                        disabled={isManager && u.role === 'ADMIN'}
                         className="btn btn-secondary btn-icon"
-                        title="Chỉnh sửa hồ sơ"
+                        style={{
+                          opacity: isManager && u.role === 'ADMIN' ? 0.35 : 1,
+                          cursor: isManager && u.role === 'ADMIN' ? 'not-allowed' : 'pointer',
+                        }}
+                        title={isManager && u.role === 'ADMIN' ? 'Điều phối viên không có quyền chỉnh sửa Admin' : 'Chỉnh sửa hồ sơ'}
                       >
                         <Edit size={16} />
                       </button>
                       <button
                         onClick={() => handleToggleStatus(u)}
+                        disabled={(isManager && u.role === 'ADMIN') || currentUser?.id === u.id}
                         className={`btn ${u.status === 'ACTIVE' ? 'btn-danger' : 'btn-secondary'} btn-icon`}
-                        title={u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
+                        style={{
+                          opacity: (isManager && u.role === 'ADMIN') || currentUser?.id === u.id ? 0.35 : 1,
+                          cursor: (isManager && u.role === 'ADMIN') || currentUser?.id === u.id ? 'not-allowed' : 'pointer',
+                        }}
+                        title={
+                          isManager && u.role === 'ADMIN'
+                            ? 'Điều phối viên không có quyền khóa Admin'
+                            : currentUser?.id === u.id
+                            ? 'Không thể tự khóa tài khoản của chính mình'
+                            : u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'
+                        }
                       >
                         {u.status === 'ACTIVE' ? <Lock size={16} /> : <Unlock size={16} color="var(--accent-emerald)" />}
                       </button>
@@ -524,8 +582,17 @@ export const UserPage: React.FC = () => {
             >
               <option value="DRIVER">Tài xế (DRIVER) - Lái xe & kê khai chi phí</option>
               <option value="MANAGER">Điều phối đội xe (MANAGER) - Gán xe & xem báo cáo</option>
-              <option value="ADMIN">Quản trị viên (ADMIN) - Toàn quyền hệ thống</option>
+              {isAdmin ? (
+                <option value="ADMIN">Quản trị viên (ADMIN) - Toàn quyền hệ thống</option>
+              ) : (
+                <option value="ADMIN" disabled>Quản trị viên (ADMIN) - Chỉ Admin mới có quyền cấp</option>
+              )}
             </select>
+            {isManager && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.375rem' }}>
+                * Quyền Điều phối viên chỉ được phép phân quyền Tài xế hoặc Điều phối viên, không được cấp quyền Quản trị viên (ADMIN).
+              </div>
+            )}
           </div>
 
           {/* Conditional driver license fields */}
