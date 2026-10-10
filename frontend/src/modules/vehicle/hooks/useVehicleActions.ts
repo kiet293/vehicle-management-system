@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { vehicleService, CreateVehicleData, UpdateVehicleData } from '../services/vehicleService';
 import { userService } from '../../user/services/userService';
-import { Vehicle, User } from '../../../types';
+import { Vehicle, VehicleStatus, User } from '../../../types';
 import { useToast } from '../../../context/ToastContext';
 
 const extractErrorMessage = (err: unknown, fallback: string): string => {
@@ -125,12 +125,21 @@ export const useVehicleActions = (onChanged: () => void) => {
   };
 
   const handleFinishMaintenance = async (v: Vehicle) => {
+    await handleChangeStatus(v, 'AVAILABLE');
+  };
+
+  const handleChangeStatus = async (v: Vehicle, status: VehicleStatus) => {
+    if (v.status === status) return;
     try {
-      await vehicleService.updateStatus(v.id, 'AVAILABLE');
-      showToast('success', `Đã hoàn thành bảo dưỡng cho xe ${v.licensePlate}! Trạng thái chuyển sang SẴN SÀNG.`);
+      await vehicleService.updateStatus(v.id, status);
+      if (status === 'MAINTENANCE') {
+        showToast('success', `Đã đưa xe ${v.licensePlate} vào bảo dưỡng. Trạng thái chuyển sang BẢO DƯỠNG.`);
+      } else {
+        showToast('success', `Đã hoàn thành bảo dưỡng cho xe ${v.licensePlate}! Trạng thái chuyển sang SẴN SÀNG.`);
+      }
       onChanged();
-    } catch {
-      showToast('error', 'Không thể cập nhật trạng thái');
+    } catch (err: unknown) {
+      showToast('error', extractErrorMessage(err, 'Không thể cập nhật trạng thái xe'));
     }
   };
 
@@ -174,6 +183,7 @@ export const useVehicleActions = (onChanged: () => void) => {
     handleAssign,
     handleReturn,
     handleFinishMaintenance,
+    handleChangeStatus,
     confirmDelete,
   };
 };
