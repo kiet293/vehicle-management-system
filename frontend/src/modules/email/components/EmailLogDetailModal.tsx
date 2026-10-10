@@ -186,7 +186,7 @@ export const EmailLogDetailModal: React.FC<EmailLogDetailModalProps> = ({
               }}
             >
               <RotateCcw size={14} />
-              <span>Gửi lại hoặc Soạn lại</span>
+              <span>Gửi lại email</span>
             </button>
           )}
         </div>

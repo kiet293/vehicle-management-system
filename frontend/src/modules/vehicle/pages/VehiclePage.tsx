@@ -1,11 +1,12 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Car, Search } from 'lucide-react';
-import { Vehicle } from '../../../types';
+import { Vehicle, User } from '../../../types';
 import { useAuth } from '../../../context/AuthContext';
 import { Skeleton, TableSkeleton } from '../../../components/common/Skeleton';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { useVehicleFleet } from '../hooks/useVehicleFleet';
 import { useVehicleActions } from '../hooks/useVehicleActions';
+import { userService } from '../../user/services/userService';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { VehiclePageHeader } from '../components/VehiclePageHeader';
 import { VehicleFilters } from '../components/VehicleFilters';
@@ -16,10 +17,16 @@ import { AssignDriverModal } from '../components/AssignDriverModal';
 import { ReturnVehicleModal } from '../components/ReturnVehicleModal';
 import { DeleteVehicleModal } from '../components/DeleteVehicleModal';
 import { VehicleTripHistoryModal } from '../components/VehicleTripHistoryModal';
+import { VehicleDetailModal } from '../components/VehicleDetailModal';
+import { VehicleIncidentModal } from '../../email/components/VehicleIncidentModal';
 
 export const VehiclePage: React.FC = () => {
   const { user } = useAuth();
   const isDriver = user?.role === 'DRIVER';
+
+  const [driversMap, setDriversMap] = useState<Record<number, User>>({});
+  const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
+  const [incidentVehicle, setIncidentVehicle] = useState<Vehicle | null>(null);
 
   const {
     vehicles,
@@ -40,17 +47,42 @@ export const VehiclePage: React.FC = () => {
     loadBrands,
   } = useVehicleFleet();
 
+  const loadDriversMap = useCallback(async () => {
+    try {
+      const drivers = await userService.getUsers('DRIVER');
+      const map: Record<number, User> = {};
+      drivers.forEach((d) => {
+        map[d.id] = d;
+      });
+      setDriversMap(map);
+    } catch {
+      // Fault isolation: continue with existing map
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDriversMap();
+  }, [loadDriversMap]);
+
   // Refresh both the vehicle list and the brand dropdown after any mutation
   // so a newly created / renamed / deleted brand is reflected immediately.
   const refreshAll = useCallback(() => {
     void fetchVehicles();
     void loadBrands();
-  }, [fetchVehicles, loadBrands]);
+    void loadDriversMap();
+  }, [fetchVehicles, loadBrands, loadDriversMap]);
 
   const actions = useVehicleActions(refreshAll);
 
+  const handleOpenIncidentEmail = useCallback((v: Vehicle) => {
+    setIncidentVehicle(v);
+    setIsIncidentModalOpen(true);
+  }, []);
+
   const rowActionProps = {
     isDriver,
+    driversMap,
+    onViewDetail: actions.openDetailModal,
     onAssign: actions.openAssignModal,
     onReturn: actions.openReturnModal,
     onFinishMaintenance: actions.handleFinishMaintenance,
@@ -58,6 +90,7 @@ export const VehiclePage: React.FC = () => {
     onDelete: actions.requestDelete,
     onViewTrips: actions.openTripHistoryModal,
     onChangeStatus: actions.handleChangeStatus,
+    onSendIncidentEmail: handleOpenIncidentEmail,
   };
 
   return (
@@ -123,6 +156,8 @@ export const VehiclePage: React.FC = () => {
         mode="CREATE"
         vehicle={null}
         onSubmit={actions.handleCreate}
+        drivers={actions.availableDrivers}
+        driversMap={driversMap}
       />
 
       {actions.selectedVehicle && (
@@ -132,6 +167,8 @@ export const VehiclePage: React.FC = () => {
           mode="EDIT"
           vehicle={actions.selectedVehicle}
           onSubmit={actions.handleUpdate}
+          drivers={actions.availableDrivers}
+          driversMap={driversMap}
         />
       )}
 
@@ -165,6 +202,39 @@ export const VehiclePage: React.FC = () => {
           vehicle={actions.selectedVehicle as Vehicle}
         />
       )}
+
+      <VehicleIncidentModal
+        isOpen={isIncidentModalOpen}
+        onClose={() => {
+          setIsIncidentModalOpen(false);
+          setIncidentVehicle(null);
+        }}
+        onSuccess={() => {
+          refreshAll();
+        }}
+        vehicles={vehicles}
+        initialVehicle={incidentVehicle}
+        driversMap={driversMap}
+      />
+
+      <VehicleDetailModal
+        isOpen={actions.isDetailModalOpen}
+        onClose={actions.closeDetailModal}
+        vehicle={actions.detailVehicle}
+        driver={
+          actions.detailVehicle?.assignedDriverId
+            ? driversMap[actions.detailVehicle.assignedDriverId]
+            : null
+        }
+        isDriver={isDriver}
+        onChangeStatus={actions.handleChangeStatus}
+        onEdit={actions.openEditModal}
+        onAssign={actions.openAssignModal}
+        onReturn={actions.openReturnModal}
+        onFinishMaintenance={actions.handleFinishMaintenance}
+        onViewTrips={actions.openTripHistoryModal}
+        onSendIncidentEmail={handleOpenIncidentEmail}
+      />
     </div>
   );
 };

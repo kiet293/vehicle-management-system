@@ -2,6 +2,7 @@ package com.vms.email.controller;
 
 import com.vms.email.common.ApiResponse;
 import com.vms.email.dto.AssignmentAlertRequest;
+import com.vms.email.dto.AutoNotificationRequest;
 import com.vms.email.dto.HighCostAlertRequest;
 import com.vms.email.dto.MaintenanceAlertRequest;
 import com.vms.email.dto.SendEmailRequest;
@@ -33,27 +34,36 @@ public class EmailController {
             return ResponseEntity.ok(ApiResponse.error(log.getErrorMessage() != null ? log.getErrorMessage() : "Gửi email thất bại", log));
         }
         String successMsg = (log.getStatus() == EmailStatus.SENT)
-                ? "Đã gửi email thành công qua máy chủ SMTP!"
-                : "Đã ghi nhận gửi email thành công (Chế độ mô phỏng / Mock Sent)!";
+                ? "Đã gửi email thành công qua máy chủ SMTP tới " + log.getRecipient() + "!"
+                : "Đã ghi nhận gửi email thành công (Chế độ mô phỏng / Mock Sent tới " + log.getRecipient() + ")!";
+        return ResponseEntity.ok(ApiResponse.success(successMsg, log));
+    }
+
+    @PostMapping({"/notify-user", "/alerts/auto"})
+    public ResponseEntity<ApiResponse<EmailLog>> notifyUser(@RequestBody AutoNotificationRequest request) {
+        EmailLog log = emailService.sendAutoNotification(request);
+        String successMsg = (log.getStatus() == EmailStatus.SENT)
+                ? "Đã tự động gửi thông báo đến người dùng: " + log.getRecipient()
+                : "Đã ghi nhận thông báo tự động (Mô phỏng): " + log.getRecipient();
         return ResponseEntity.ok(ApiResponse.success(successMsg, log));
     }
 
     @PostMapping("/alerts/maintenance")
     public ResponseEntity<ApiResponse<EmailLog>> sendMaintenanceAlert(@RequestBody MaintenanceAlertRequest request) {
         EmailLog log = emailService.sendMaintenanceAlert(request);
-        return ResponseEntity.ok(ApiResponse.success("Đã gửi email cảnh báo bảo dưỡng xe " + request.getLicensePlate(), log));
+        return ResponseEntity.ok(ApiResponse.success("Đã tự động gửi email cảnh báo bảo dưỡng xe " + request.getLicensePlate() + " tới " + log.getRecipient(), log));
     }
 
     @PostMapping("/alerts/high-cost")
     public ResponseEntity<ApiResponse<EmailLog>> sendHighCostAlert(@RequestBody HighCostAlertRequest request) {
         EmailLog log = emailService.sendHighCostAlert(request);
-        return ResponseEntity.ok(ApiResponse.success("Đã gửi email cảnh báo chi phí đột biến xe " + request.getLicensePlate(), log));
+        return ResponseEntity.ok(ApiResponse.success("Đã tự động gửi email cảnh báo chi phí đột biến xe " + request.getLicensePlate() + " tới " + log.getRecipient(), log));
     }
 
     @PostMapping("/alerts/assignment")
     public ResponseEntity<ApiResponse<EmailLog>> sendAssignmentAlert(@RequestBody AssignmentAlertRequest request) {
         EmailLog log = emailService.sendAssignmentNotification(request);
-        return ResponseEntity.ok(ApiResponse.success("Đã gửi email thông báo bàn giao xe " + request.getLicensePlate(), log));
+        return ResponseEntity.ok(ApiResponse.success("Đã tự động gửi email thông báo bàn giao xe " + request.getLicensePlate() + " tới " + log.getRecipient(), log));
     }
 
     @GetMapping("/logs")

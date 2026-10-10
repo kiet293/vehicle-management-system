@@ -9,6 +9,7 @@ spring:
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:placeholder_user}
     password: ${MAIL_PASSWORD:placeholder_password}
+    default-encoding: UTF-8
     properties:
       mail:
         smtp:
@@ -19,6 +20,14 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+
+app:
+  email:
+    product-name: ${MAIL_PRODUCT_NAME:Hệ thống Quản lý Phương tiện VMS}
+    from-address: ${MAIL_FROM_ADDRESS:${spring.mail.username:noreply@vms.com}}
+    default-recipient: ${NOTIFICATION_RECIPIENT_EMAIL:${spring.mail.username:admin@vms.com}}
+  services:
+    user-service-url: ${USER_SERVICE_URL:http://localhost:8081}
 
 management:
   endpoints:
