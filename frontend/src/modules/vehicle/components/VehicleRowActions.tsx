@@ -1,31 +1,72 @@
 import React from 'react';
-import { ArrowRight, Edit, History, Send, Trash2, Wrench } from 'lucide-react';
+import { ArrowRight, Edit, Eye, History, Mail, Send, Trash2, Wrench } from 'lucide-react';
 import { Vehicle } from '../../../types';
 
 interface VehicleRowActionsProps {
   vehicle: Vehicle;
   isDriver: boolean;
   compact?: boolean;
+  onViewDetail?: (v: Vehicle) => void;
   onAssign: (v: Vehicle) => void;
   onReturn: (v: Vehicle) => void;
   onFinishMaintenance: (v: Vehicle) => void;
   onEdit: (v: Vehicle) => void;
   onDelete: (v: Vehicle) => void;
   onViewTrips: (v: Vehicle) => void;
+  onSendIncidentEmail?: (v: Vehicle) => void;
 }
 
 export const VehicleRowActions: React.FC<VehicleRowActionsProps> = ({
   vehicle,
   isDriver,
   compact = false,
+  onViewDetail,
   onAssign,
   onReturn,
   onFinishMaintenance,
   onEdit,
   onDelete,
   onViewTrips,
-}) => (
-  <>
+  onSendIncidentEmail,
+}) => {
+  const isIncident = vehicle.status === 'MAINTENANCE' || vehicle.maintenanceDue || vehicle.status === 'DECOMMISSIONED';
+
+  return (
+    <>
+      {/* Nút gửi email sự cố - CHỈ HIỂN THỊ KHI XE GẶP SỰ CỐ */}
+      {isIncident && onSendIncidentEmail && (
+        <button
+          onClick={() => onSendIncidentEmail(vehicle)}
+          className="btn btn-sm"
+          style={
+            compact
+              ? {
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  color: '#f87171',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }
+              : {
+                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%)',
+                  color: '#f87171',
+                  border: '1px solid rgba(239, 68, 68, 0.45)',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '5px',
+                  padding: '0.4rem 0.75rem',
+                }
+          }
+          title="Gửi email thông báo sự cố cho chủ xe / khách hàng"
+        >
+          <Mail size={13} />
+          {compact ? 'Báo sự cố' : 'Gửi mail sự cố'}
+        </button>
+      )}
     {vehicle.status === 'AVAILABLE' && !isDriver && (
       <button
         onClick={() => onAssign(vehicle)}
@@ -79,6 +120,17 @@ export const VehicleRowActions: React.FC<VehicleRowActionsProps> = ({
       </button>
     )}
 
+    {onViewDetail && (
+      <button
+        onClick={() => onViewDetail(vehicle)}
+        className="btn btn-secondary btn-icon"
+        style={compact ? undefined : { width: '32px', height: '32px' }}
+        title="Xem chi tiết phương tiện & tài xế"
+      >
+        <Eye size={14} />
+      </button>
+    )}
+
     <button
       onClick={() => onViewTrips(vehicle)}
       className="btn btn-secondary btn-icon"
@@ -111,5 +163,6 @@ export const VehicleRowActions: React.FC<VehicleRowActionsProps> = ({
     )}
   </>
 );
+};
 
 export default VehicleRowActions;

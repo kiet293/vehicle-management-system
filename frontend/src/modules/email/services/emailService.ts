@@ -48,7 +48,7 @@ export const emailService = {
         licensePlate: '29A-888.88',
         currentOdometer: 20050,
         lastMaintenanceOdometer: 15000,
-        recipientEmail: customRecipient || 'manager@vms.com',
+        recipientEmail: customRecipient,
       });
     } else if (type === 'HIGH_COST_ALERT') {
       return emailService.sendHighCostAlert({
@@ -57,17 +57,17 @@ export const emailService = {
         amount: 6500000,
         driverName: 'Nguyễn Văn An',
         description: 'Thay lốp và bảo dưỡng khẩn cấp dọc đường',
-        recipientEmail: customRecipient || 'manager@vms.com',
+        recipientEmail: customRecipient,
       });
     } else if (type === 'ASSIGNMENT_NOTIFICATION') {
       return emailService.sendAssignmentAlert({
         licensePlate: '51K-999.99',
         driverName: 'Phạm Hoàng Bình',
-        driverEmail: customRecipient || 'driver.binh@vms.com',
+        driverEmail: customRecipient,
       });
     } else {
       return emailService.sendEmail({
-        to: customRecipient || 'admin@vms.com',
+        to: customRecipient || '',
         subject: '[TEST] Kiểm tra kết nối Dịch vụ Gửi Email VMS',
         content: `Hệ thống VMS thực hiện gửi email thử nghiệm thành công vào lúc: ${new Date().toLocaleString('vi-VN')}.\nMáy chủ SMTP và hệ thống dự phòng Fault Isolation đang vận hành bình thường.`,
         type: 'TEST',

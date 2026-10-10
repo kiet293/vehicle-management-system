@@ -28,7 +28,7 @@ export interface HighCostAlertRequest {
 export interface AssignmentAlertRequest {
   licensePlate: string;
   driverName: string;
-  driverEmail: string;
+  driverEmail?: string;
 }
 
 export interface EmailNotification {

@@ -120,8 +120,13 @@ services:
       - "8084:8084"
     environment:
       SERVER_PORT: 8084
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_USERNAME: ${MAIL_USERNAME:-placeholder_email@example.com}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-placeholder_app_password}
+      MAIL_PRODUCT_NAME: ${MAIL_PRODUCT_NAME:-Hệ thống Quản lý Phương tiện VMS}
+      NOTIFICATION_RECIPIENT_EMAIL: ${NOTIFICATION_RECIPIENT_EMAIL:-}
+      USER_SERVICE_URL: http://user-service:8081
     networks:
       - vehicle-management-network
 

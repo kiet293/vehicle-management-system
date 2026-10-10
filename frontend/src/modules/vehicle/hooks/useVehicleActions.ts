@@ -26,32 +26,54 @@ export const useVehicleActions = (onChanged: () => void) => {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [isTripHistoryOpen, setIsTripHistoryOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [detailVehicle, setDetailVehicle] = useState<Vehicle | null>(null);
   const [deletingVehicle, setDeletingVehicle] = useState<Vehicle | null>(null);
   const [availableDrivers, setAvailableDrivers] = useState<User[]>([]);
   const [driversStatus, setDriversStatus] = useState<DriversStatus>('idle');
 
-  const openAddModal = () => setIsAddModalOpen(true);
+  const loadDrivers = async () => {
+    setDriversStatus('loading');
+    try {
+      const drivers = await userService.getUsers('DRIVER');
+      setAvailableDrivers(drivers);
+      setDriversStatus('ready');
+    } catch {
+      try {
+        setAvailableDrivers(await userService.getAvailableDrivers());
+        setDriversStatus('ready');
+      } catch {
+        setAvailableDrivers([]);
+        setDriversStatus('error');
+      }
+    }
+  };
+
+  const openAddModal = () => {
+    setIsAddModalOpen(true);
+    void loadDrivers();
+  };
   const closeAddModal = () => setIsAddModalOpen(false);
 
   const openEditModal = (v: Vehicle) => {
     setSelectedVehicle(v);
     setIsEditModalOpen(true);
+    void loadDrivers();
   };
   const closeEditModal = () => setIsEditModalOpen(false);
 
-  const loadDrivers = async () => {
-    setDriversStatus('loading');
-    try {
-      setAvailableDrivers(await userService.getAvailableDrivers());
-      setDriversStatus('ready');
-    } catch {
-      setAvailableDrivers([]);
-      setDriversStatus('error');
-    }
+  const openDetailModal = (v: Vehicle) => {
+    setSelectedVehicle(v);
+    setDetailVehicle(v);
+    setIsDetailModalOpen(true);
+  };
+  const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setDetailVehicle(null);
   };
 
   const openAssignModal = (v: Vehicle) => {
@@ -73,10 +95,41 @@ export const useVehicleActions = (onChanged: () => void) => {
   };
   const closeTripHistoryModal = () => setIsTripHistoryOpen(false);
 
-  const handleCreate = async (data: CreateVehicleData | UpdateVehicleData) => {
+  const handleCreate = async (
+    data: CreateVehicleData | UpdateVehicleData,
+    driverId?: number | null,
+    status?: VehicleStatus
+  ) => {
     try {
       const created = await vehicleService.createVehicle(data as CreateVehicleData);
-      showToast('success', `Thêm phương tiện ${created.licensePlate} thành công!`);
+
+      // Cập nhật tình trạng xe nếu khác AVAILABLE
+      if (status && status !== 'AVAILABLE') {
+        try {
+          await vehicleService.updateStatus(created.id, status);
+        } catch {
+          console.warn('Update initial status failed');
+        }
+      }
+
+      // Nếu người dùng chọn gán tài xế ngay khi tạo xe
+      if (driverId) {
+        try {
+          const driversList = availableDrivers.length ? availableDrivers : await userService.getUsers('DRIVER');
+          const driver = driversList.find((d) => d.id === driverId);
+          if (driver) {
+            await vehicleService.assignDriver(created.id, driver.id, driver.fullName, driver.email);
+            showToast('success', `Đã thêm xe ${created.licensePlate} và bàn giao cho tài xế ${driver.fullName}!`);
+          } else {
+            showToast('success', `Thêm phương tiện ${created.licensePlate} thành công!`);
+          }
+        } catch {
+          showToast('success', `Thêm xe ${created.licensePlate} thành công (vui lòng bàn giao tài xế sau).`);
+        }
+      } else {
+        showToast('success', `Thêm phương tiện ${created.licensePlate} thành công!`);
+      }
+
       setIsAddModalOpen(false);
       onChanged();
     } catch (err: unknown) {
@@ -84,10 +137,52 @@ export const useVehicleActions = (onChanged: () => void) => {
     }
   };
 
-  const handleUpdate = async (data: CreateVehicleData | UpdateVehicleData) => {
+  const handleUpdate = async (
+    data: CreateVehicleData | UpdateVehicleData,
+    newDriverId?: number | null,
+    newStatus?: VehicleStatus
+  ) => {
     if (!selectedVehicle) return;
     try {
       await vehicleService.updateVehicle(selectedVehicle.id, data as UpdateVehicleData);
+
+      // Cập nhật tình trạng xe nếu có thay đổi
+      if (newStatus && newStatus !== selectedVehicle.status) {
+        try {
+          await vehicleService.updateStatus(selectedVehicle.id, newStatus);
+        } catch {
+          console.warn('Update vehicle status failed');
+        }
+      }
+
+      const currentDriverId = selectedVehicle.assignedDriverId;
+      if (newDriverId !== undefined && newDriverId !== currentDriverId) {
+        const odo = (data as UpdateVehicleData).currentOdometer ?? selectedVehicle.currentOdometer;
+
+        if (currentDriverId && !newDriverId) {
+          // Thu hồi xe về trạng thái không có tài xế
+          try {
+            await vehicleService.returnVehicle(selectedVehicle.id, odo, 'Thu hồi xe từ giao diện chỉnh sửa');
+          } catch (retErr) {
+            console.warn('Return vehicle failed:', retErr);
+          }
+        } else if (newDriverId) {
+          // Bàn giao cho tài xế mới
+          try {
+            if (currentDriverId) {
+              await vehicleService.returnVehicle(selectedVehicle.id, odo, 'Đổi tài xế từ giao diện chỉnh sửa');
+            }
+            const driversList = availableDrivers.length ? availableDrivers : await userService.getUsers('DRIVER');
+            const driver = driversList.find((d) => d.id === newDriverId);
+            if (driver) {
+              await vehicleService.assignDriver(selectedVehicle.id, driver.id, driver.fullName, driver.email);
+            }
+          } catch (assignErr) {
+            console.warn('Re-assigning driver failed:', assignErr);
+          }
+        }
+      }
+
       showToast('success', `Cập nhật thông tin xe ${selectedVehicle.licensePlate} thành công!`);
       setIsEditModalOpen(false);
       onChanged();
@@ -158,10 +253,12 @@ export const useVehicleActions = (onChanged: () => void) => {
   return {
     isAddModalOpen,
     isEditModalOpen,
+    isDetailModalOpen,
     isAssignModalOpen,
     isReturnModalOpen,
     isTripHistoryOpen,
     selectedVehicle,
+    detailVehicle,
     deletingVehicle,
     availableDrivers,
     driversStatus,
@@ -170,6 +267,8 @@ export const useVehicleActions = (onChanged: () => void) => {
     closeAddModal,
     openEditModal,
     closeEditModal,
+    openDetailModal,
+    closeDetailModal,
     openAssignModal,
     closeAssignModal,
     openReturnModal,
