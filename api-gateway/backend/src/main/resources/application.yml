@@ -10,7 +10,7 @@ spring:
         - id: user-service-auth
           uri: ${USER_SERVICE_URL:http://user-service:8081}
           predicates:
-            - Path=/api/auth/**
+            - Path=/api/auth/**, /api/v1/auth/**
         - id: user-service-users
           uri: ${USER_SERVICE_URL:http://user-service:8081}
           predicates:

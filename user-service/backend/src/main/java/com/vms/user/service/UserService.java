@@ -52,6 +52,28 @@ public class UserService {
         return new LoginResponse(token, UserDTO.fromEntity(user));
     }
 
+    @Transactional
+    public LoginResponse register(RegisterRequest request) {
+        if (request.getPassword() == null || request.getPassword().trim().length() < 6) {
+            throw new BadRequestException("Mật khẩu phải có tối thiểu 6 ký tự");
+        }
+        CreateUserRequest createReq = CreateUserRequest.builder()
+                .username(request.getUsername())
+                .password(request.getPassword())
+                .fullName(request.getFullName())
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .role(request.getRole() != null ? request.getRole() : Role.DRIVER)
+                .driverLicenseNumber(request.getDriverLicenseNumber())
+                .driverLicenseClass(request.getDriverLicenseClass())
+                .build();
+        UserDTO userDTO = createUser(createReq);
+        User user = userRepository.findById(userDTO.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng vừa tạo"));
+        String token = jwtTokenProvider.generateToken(user);
+        return new LoginResponse(token, userDTO);
+    }
+
     public UserDTO getCurrentUser(String tokenHeader) {
         if (tokenHeader == null || !tokenHeader.startsWith("Bearer ")) {
             throw new UnauthorizedException("Phiên làm việc không hợp lệ hoặc đã hết hạn.");
@@ -135,10 +157,45 @@ public class UserService {
         return UserDTO.fromEntity(saved);
     }
 
+    public User getCallerUser(String tokenHeader) {
+        if (tokenHeader == null || !tokenHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        try {
+            String token = tokenHeader.substring(7);
+            if (jwtTokenProvider.validateToken(token)) {
+                String username = jwtTokenProvider.getUsernameFromToken(token);
+                return userRepository.findByUsername(username).orElse(null);
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
     @Transactional
-    public UserDTO updateUser(Long id, UpdateUserRequest request) {
+    public UserDTO createUser(CreateUserRequest request, String tokenHeader) {
+        User caller = getCallerUser(tokenHeader);
+        if (caller != null && caller.getRole() == Role.MANAGER) {
+            if (request.getRole() == Role.ADMIN) {
+                throw new BadRequestException("Người điều phối (MANAGER) chỉ có quyền tạo tài khoản Tài xế hoặc Điều phối viên, không được phép tạo Quản trị viên (ADMIN)!");
+            }
+        }
+        return createUser(request);
+    }
+
+    @Transactional
+    public UserDTO updateUser(Long id, UpdateUserRequest request, String tokenHeader) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên với ID: " + id));
+
+        User caller = getCallerUser(tokenHeader);
+        if (caller != null && caller.getRole() == Role.MANAGER) {
+            if (user.getRole() == Role.ADMIN) {
+                throw new BadRequestException("Người điều phối (MANAGER) không có quyền chỉnh sửa tài khoản Quản trị viên (ADMIN)!");
+            }
+            if (request.getRole() == Role.ADMIN) {
+                throw new BadRequestException("Người điều phối (MANAGER) chỉ có quyền phân quyền Tài xế hoặc Điều phối viên, không được phép chuyển quyền lên Quản trị viên (ADMIN)!");
+            }
+        }
 
         if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
             user.setFullName(request.getFullName().trim());
@@ -185,20 +242,50 @@ public class UserService {
     }
 
     @Transactional
-    public UserDTO updateStatus(Long id, UserStatus status) {
+    public UserDTO updateUser(Long id, UpdateUserRequest request) {
+        return updateUser(id, request, null);
+    }
+
+    @Transactional
+    public UserDTO updateStatus(Long id, UserStatus status, String tokenHeader) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên với ID: " + id));
+
+        User caller = getCallerUser(tokenHeader);
+        if (caller != null && caller.getRole() == Role.MANAGER) {
+            if (user.getRole() == Role.ADMIN) {
+                throw new BadRequestException("Người điều phối (MANAGER) không có quyền khóa hoặc mở khóa tài khoản Quản trị viên (ADMIN)!");
+            }
+        }
+
         user.setStatus(status);
         User updated = userRepository.save(user);
         return UserDTO.fromEntity(updated);
     }
 
     @Transactional
-    public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Không tìm thấy nhân viên với ID: " + id);
+    public UserDTO updateStatus(Long id, UserStatus status) {
+        return updateStatus(id, status, null);
+    }
+
+    @Transactional
+    public void deleteUser(Long id, String tokenHeader) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên với ID: " + id));
+
+        User caller = getCallerUser(tokenHeader);
+        if (caller != null && caller.getRole() == Role.MANAGER) {
+            if (user.getRole() == Role.ADMIN) {
+                throw new BadRequestException("Người điều phối (MANAGER) không có quyền xóa tài khoản Quản trị viên (ADMIN)!");
+            }
         }
+
         userRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        deleteUser(id, null);
     }
 
     public List<UserDTO> getAvailableDrivers() {

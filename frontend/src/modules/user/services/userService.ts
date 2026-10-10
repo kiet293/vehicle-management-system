@@ -12,6 +12,17 @@ export interface CreateUserData {
   driverLicenseClass?: string;
 }
 
+export interface RegisterData {
+  username: string;
+  password: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  role?: Role;
+  driverLicenseNumber?: string;
+  driverLicenseClass?: string;
+}
+
 export interface UpdateUserData {
   fullName?: string;
   email?: string;
@@ -23,6 +34,10 @@ export interface UpdateUserData {
 }
 
 export const userService = {
+  register: async (data: RegisterData): Promise<{ token: string; user: User }> => {
+    const res = await apiClient.post<ApiResponse<{ token: string; user: User }>>('/api/auth/register', data);
+    return res.data.data;
+  },
   getUsers: async (role?: Role, search?: string): Promise<User[]> => {
     const res = await apiClient.get<ApiResponse<User[]>>('/api/users', {
       params: { role, search },

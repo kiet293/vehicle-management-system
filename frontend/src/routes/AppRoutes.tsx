@@ -14,8 +14,9 @@ export const AppRoutes: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Login Route */}
+        {/* Public Login & Register Routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<LoginPage initialMode="register" />} />
 
         {/* Dashboard Overview: Admin and Manager only */}
         <Route
