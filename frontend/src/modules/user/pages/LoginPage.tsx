@@ -233,16 +233,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
       }}
     >
       <div
-        className="glass-panel"
+        className="glass-panel vms-auth-card"
         style={{
-          width: '100%',
           maxWidth: authMode === 'register' ? '540px' : '460px',
-          padding: '2.5rem',
-          backgroundColor: 'rgba(17, 24, 39, 0.9)',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.7)',
-          borderRadius: '24px',
-          position: 'relative',
-          zIndex: 10,
           transition: 'max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
@@ -531,7 +524,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
               {regErrors.fullName && <div className="form-error-msg">{regErrors.fullName}</div>}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.875rem' }}>
+            <div className="form-grid-2">
               {/* Username */}
               <div className="form-group">
                 <label className="form-label" htmlFor="reg_username">
@@ -598,7 +591,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
               <label className="form-label">
                 Vai trò mong muốn <span style={{ color: '#f43f5e' }}>*</span>
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+              <div className="form-grid-2">
                 <div
                   onClick={() => setRegRole('DRIVER')}
                   style={{
@@ -662,7 +655,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   <CreditCard size={15} />
                   <span>Thông tin giấy phép lái xe</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                <div className="form-grid-2">
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label" htmlFor="reg_licenseClass">
                       Hạng bằng lái <span style={{ color: '#f43f5e' }}>*</span>
@@ -699,7 +692,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
             )}
 
             {/* Passwords */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.875rem', marginBottom: '1.75rem' }}>
+            <div className="form-grid-2" style={{ marginBottom: '1.75rem' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" htmlFor="reg_password">
                   Mật khẩu <span style={{ color: '#f43f5e' }}>*</span>

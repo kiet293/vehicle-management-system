@@ -510,7 +510,7 @@ export const UserPage: React.FC = () => {
             {errors.fullName && <div className="form-error-msg">{errors.fullName}</div>}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-grid-2">
             <div className="form-group">
               <label className="form-label">
                 Tên đăng nhập {!editingUser && <span style={{ color: 'var(--accent-rose)' }}>*</span>}
@@ -542,7 +542,7 @@ export const UserPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-grid-2">
             <div className="form-group">
               <label className="form-label">
                 Email <span style={{ color: 'var(--accent-rose)' }}>*</span>
@@ -609,7 +609,7 @@ export const UserPage: React.FC = () => {
               <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--accent-amber)', marginBottom: '0.75rem' }}>
                 Thông tin Giấy phép Lái xe (Bắt buộc cho Tài xế)
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-grid-2">
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Hạng bằng lái</label>
                   <select

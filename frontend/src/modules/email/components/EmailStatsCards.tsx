@@ -14,13 +14,7 @@ export const EmailStatsCards: React.FC<EmailStatsCardsProps> = ({ logs }) => {
   const failedCount = logs.filter((l) => l.status === 'FAILED').length;
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '1rem',
-      }}
-    >
+    <div className="responsive-kpi-grid">
       {/* Total Sent */}
       <div className="glass-panel" style={{ padding: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

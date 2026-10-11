@@ -414,7 +414,7 @@ export const VehicleIncidentModal: React.FC<VehicleIncidentModalProps> = ({
         </div>
 
         {/* 3. Customer / Recipient Email & Name */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div className="form-grid-2">
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <User size={14} /> Tên chủ xe / Khách hàng

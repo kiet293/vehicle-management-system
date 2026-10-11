@@ -173,7 +173,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: vehicle.imageUrl ? '240px 1fr' : '1fr',
+            gridTemplateColumns: vehicle.imageUrl ? 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))' : '1fr',
             gap: '1.25rem',
             alignItems: 'stretch',
           }}
@@ -301,7 +301,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
         </div>
 
         {/* 2 Cột: Thông số Vận hành & Thông tin Tài xế */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+        <div className="form-grid-2">
           {/* CỘT 1: TÌNH TRẠNG XE & KỸ THUẬT BẢO DƯỠNG */}
           <div
             style={{
