@@ -64,42 +64,29 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
   };
 
   return (
-    <header
-      style={{
-        borderBottom: '1px solid var(--border-color)',
-        backgroundColor: 'rgba(10, 14, 23, 0.85)',
-        backdropFilter: 'blur(16px)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 40,
-        padding: '0.75rem 2rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+    <header className="vms-navbar">
+      <div className="vms-navbar-brand-col">
         {/* Mobile Hamburger */}
         <button
           onClick={onToggleMobileMenu}
           className="btn btn-secondary btn-icon"
-          style={{ display: 'none' }}
           id="hamburger-btn"
+          aria-label="Mở menu"
         >
           <Menu size={20} />
         </button>
 
-        <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, letterSpacing: '-0.01em' }}>
+        <div style={{ minWidth: 0 }}>
+          <h2 className="navbar-page-title" style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, letterSpacing: '-0.01em' }}>
             {pageTitle}
           </h2>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+          <span className="navbar-subtitle" style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
             Hệ thống quản lý đội xe phân tán Cloud VMS
           </span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div className="vms-navbar-actions">
         {/* Notification Bell with Dropdown */}
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button
@@ -127,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
 
           {isAlertOpen && (
             <div
-              className="glass-panel"
+              className="glass-panel navbar-alert-dropdown"
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
@@ -221,7 +208,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
+              <div className="navbar-user-name" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
                 {user.fullName}
               </div>
               <div style={{ marginTop: '2px' }}>{getRoleBadge()}</div>

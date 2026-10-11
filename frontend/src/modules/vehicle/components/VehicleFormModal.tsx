@@ -283,7 +283,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
             </h4>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-grid-2">
             {isCreate ? (
               <div className="form-group">
                 <label className="form-label">
@@ -335,7 +335,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <div className="form-grid-2" style={{ marginTop: '1rem' }}>
             <div className="form-group">
               <label className="form-label">
                 Dòng xe (Model) <span style={{ color: 'var(--accent-rose)' }}>*</span>
@@ -366,7 +366,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <div className="form-grid-3" style={{ marginTop: '1rem' }}>
             <div className="form-group">
               <label className="form-label">Số chỗ ngồi</label>
               <input
@@ -510,7 +510,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
             <label className="form-label">
               Tình trạng vận hành xe <span style={{ color: 'var(--accent-rose)' }}>*</span>
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="form-grid-2">
               {STATUS_OPTIONS.map((opt) => {
                 const isSelected = status === opt.value;
                 return (
@@ -685,10 +685,8 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
               </div>
 
               <div
+                className="form-grid-3"
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '0.75rem',
                   fontSize: '0.8125rem',
                   borderTop: '1px dashed rgba(16, 185, 129, 0.2)',
                   paddingTop: '0.75rem',

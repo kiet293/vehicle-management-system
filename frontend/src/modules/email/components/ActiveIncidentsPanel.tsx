@@ -121,13 +121,7 @@ export const ActiveIncidentsPanel: React.FC<ActiveIncidentsPanelProps> = ({
           </button>
         </div>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-            gap: '0.875rem',
-          }}
-        >
+        <div className="responsive-card-grid">
           {incidentVehicles.map((v) => {
             const kmOver = v.currentOdometer - v.lastMaintenanceOdometer;
             const isMaintenance = v.status === 'MAINTENANCE';

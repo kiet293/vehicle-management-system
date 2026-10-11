@@ -35,7 +35,7 @@ export const VehicleCardGrid: React.FC<VehicleCardGridProps> = ({
   onChangeStatus,
   onSendIncidentEmail,
 }) => (
-  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
+  <div className="responsive-card-grid">
     {vehicles.map((v) => {
       const driver = v.assignedDriverId && driversMap ? driversMap[v.assignedDriverId] : null;
       const driverName = v.assignedDriverName || driver?.fullName;

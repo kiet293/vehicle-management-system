@@ -443,7 +443,7 @@ export const CostPage: React.FC = () => {
           {/* Visual Category Tabs */}
           <div className="form-group">
             <label className="form-label">Khoản mục chi phí</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.375rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(70px, 1fr))', gap: '0.375rem' }}>
               {[
                 { type: 'FUEL', label: 'Xăng dầu', icon: <Fuel size={14} /> },
                 { type: 'TOLL', label: 'Vé BOT', icon: <Ticket size={14} /> },
@@ -475,7 +475,7 @@ export const CostPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem' }}>
+          <div className="form-grid-2">
             {/* Amount with Live Masking */}
             <div className="form-group">
               <label className="form-label">
