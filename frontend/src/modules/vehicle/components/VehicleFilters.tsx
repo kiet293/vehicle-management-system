@@ -28,15 +28,15 @@ export const VehicleFilters: React.FC<VehicleFiltersProps> = ({
   <div
     className="glass-panel"
     style={{
-      padding: '1rem 1.25rem',
+      padding: '1rem',
       display: 'flex',
-      gap: '1rem',
+      gap: '0.875rem',
       alignItems: 'center',
       flexWrap: 'wrap',
       justifyContent: 'space-between',
     }}
   >
-    <div style={{ position: 'relative', minWidth: '280px', flex: 1 }}>
+    <div style={{ position: 'relative', minWidth: 'min(100%, 240px)', flex: '1 1 240px' }}>
       <Search
         size={18}
         style={{
@@ -49,24 +49,24 @@ export const VehicleFilters: React.FC<VehicleFiltersProps> = ({
       />
       <input
         type="text"
-        placeholder="Tìm theo biển số (vd: 29A), hãng xe, tài xế..."
+        placeholder="Tìm biển số, hãng, tài xế..."
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
         className="form-input"
-        style={{ paddingLeft: '2.5rem' }}
+        style={{ paddingLeft: '2.5rem', width: '100%' }}
       />
     </div>
 
-    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-          Hãng xe:
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', flex: '1 1 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flex: '1 1 140px' }}>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          Hãng:
         </span>
         <select
           value={brandFilter}
           onChange={(e) => onBrandChange(e.target.value)}
           className="form-select"
-          style={{ width: 'auto', minWidth: '150px' }}
+          style={{ width: '100%', minWidth: '110px' }}
         >
           <option value="ALL">Tất cả hãng</option>
           {brands.map((brand) => (
@@ -77,25 +77,25 @@ export const VehicleFilters: React.FC<VehicleFiltersProps> = ({
         </select>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flex: '1 1 150px' }}>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           Trạng thái:
         </span>
         <select
           value={statusFilter}
           onChange={(e) => onStatusChange(e.target.value as VehicleStatus | 'ALL')}
           className="form-select"
-          style={{ width: 'auto', minWidth: '150px' }}
+          style={{ width: '100%', minWidth: '120px' }}
         >
-          <option value="ALL">Tất cả trạng thái</option>
-          <option value="AVAILABLE">Sẵn sàng (AVAILABLE)</option>
-          <option value="IN_USE">Đang chạy (IN_USE)</option>
-          <option value="MAINTENANCE">Bảo dưỡng (MAINTENANCE)</option>
-          <option value="DECOMMISSIONED">Ngừng khai thác</option>
+          <option value="ALL">Tất cả</option>
+          <option value="AVAILABLE">Sẵn sàng</option>
+          <option value="IN_USE">Đang chạy</option>
+          <option value="MAINTENANCE">Bảo dưỡng</option>
+          <option value="DECOMMISSIONED">Ngừng chạy</option>
         </select>
       </div>
 
-      <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', padding: '2px' }}>
+      <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', padding: '2px', marginLeft: 'auto' }}>
         <button
           onClick={() => onViewModeChange('GRID')}
           className={`btn btn-sm ${viewMode === 'GRID' ? 'btn-primary' : 'btn-secondary'}`}

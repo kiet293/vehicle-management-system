@@ -113,7 +113,7 @@ export const VehiclePage: React.FC = () => {
 
       {isLoading ? (
         viewMode === 'GRID' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          <div className="responsive-card-grid">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="glass-panel" style={{ height: '320px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <Skeleton height="150px" borderRadius="12px" />

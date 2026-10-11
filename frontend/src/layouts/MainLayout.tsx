@@ -33,7 +33,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>
+    <div className="vms-layout-root">
       {/* Top subtle blue progress indicator */}
       <div
         style={{
@@ -55,37 +55,18 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         onCloseMobile={() => setIsOpenMobile(false)}
       />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg-primary)' }}>
+      <div className="vms-content-column">
         <Navbar
           onToggleMobileMenu={() => setIsOpenMobile((prev) => !prev)}
           pageTitle={getPageTitle(currentPath)}
         />
 
-        <main style={{ flex: 1, padding: '2rem', maxWidth: '1440px', width: '100%', margin: '0 auto' }}>
+        <main className="vms-main-content">
           {children}
         </main>
 
-        <footer
-          style={{
-            borderTop: '1px solid var(--border-color)',
-            padding: '1.25rem 2rem',
-            backgroundColor: 'rgba(10, 14, 23, 0.95)',
-            marginTop: 'auto',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '1440px',
-              margin: '0 auto',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: '0.8125rem',
-              color: 'var(--text-dim)',
-              flexWrap: 'wrap',
-              gap: '1rem',
-            }}
-          >
+        <footer className="vms-footer">
+          <div className="vms-footer-content">
             <div>
               Vehicle Management System (VMS) • Cloud Computing & Microservices Architecture
             </div>

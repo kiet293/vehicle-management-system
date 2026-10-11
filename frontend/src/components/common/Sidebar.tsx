@@ -10,6 +10,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  X,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -76,35 +77,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile Backdrop Overlay */}
       {isOpenMobile && (
         <div
+          className="vms-sidebar-backdrop"
           onClick={onCloseMobile}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 90,
-          }}
         />
       )}
 
       <aside
-        style={{
-          width: isCollapsed ? '76px' : '260px',
-          background: 'rgba(10, 14, 23, 0.95)',
-          backdropFilter: 'blur(20px)',
-          borderRight: '1px solid var(--border-color)',
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          zIndex: 95,
-          flexShrink: 0,
-        }}
+        className={`vms-sidebar ${isCollapsed ? 'collapsed' : ''} ${isOpenMobile ? 'mobile-open' : ''}`}
       >
         {/* Brand Area */}
         <div
@@ -112,37 +94,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
             padding: '1.25rem',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.75rem',
+            justifyContent: 'space-between',
             borderBottom: '1px solid var(--border-color)',
-            cursor: 'pointer',
           }}
-          onClick={() => handleNavigate(user?.role === 'DRIVER' ? '/vehicles' : '/')}
         >
           <div
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              background: 'var(--gradient-brand)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 'var(--shadow-glow)',
-              flexShrink: 0,
+              gap: '0.75rem',
+              cursor: 'pointer',
+              flex: 1,
+              minWidth: 0,
             }}
+            onClick={() => handleNavigate(user?.role === 'DRIVER' ? '/vehicles' : '/')}
           >
-            <Car size={22} color="#ffffff" />
-          </div>
-          {!isCollapsed && (
-            <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              <h1 style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
-                VMS Fleet
-              </h1>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', margin: 0 }}>
-                Enterprise Cloud System
-              </p>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                background: 'var(--gradient-brand)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: 'var(--shadow-glow)',
+                flexShrink: 0,
+              }}
+            >
+              <Car size={22} color="#ffffff" />
             </div>
-          )}
+            {(!isCollapsed || isOpenMobile) && (
+              <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                <h1 style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
+                  VMS Fleet
+                </h1>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', margin: 0 }}>
+                  Enterprise Cloud System
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Close button inside mobile drawer */}
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="btn btn-secondary btn-icon hide-desktop"
+            style={{ width: '32px', height: '32px', flexShrink: 0 }}
+            title="Đóng menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Navigation Items */}
@@ -181,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div style={{ color: isActive ? 'var(--accent-blue)' : 'inherit', flexShrink: 0 }}>
                   {item.icon}
                 </div>
-                {!isCollapsed && <span>{item.label}</span>}
+                {(!isCollapsed || isOpenMobile) && <span>{item.label}</span>}
               </button>
             );
           })}
@@ -189,7 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* User Card & Collapse Toggle */}
         <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.75rem' }}>
-          {user && !isCollapsed && (
+          {user && (!isCollapsed || isOpenMobile) && (
             <div
               style={{
                 display: 'flex',
@@ -231,7 +234,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div style={{ display: 'flex', gap: '0.375rem' }}>
             <button
               onClick={onToggleCollapse}
-              className="btn btn-secondary"
+              className="btn btn-secondary hide-mobile"
               style={{ flex: 1, padding: '0.5rem', justifyContent: 'center' }}
               title={isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
             >
@@ -240,10 +243,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={logout}
               className="btn btn-danger"
-              style={{ padding: '0.5rem', justifyContent: 'center' }}
+              style={{ flex: 1, padding: '0.5rem', justifyContent: 'center' }}
               title="Đăng xuất"
             >
               <LogOut size={18} />
+              {isOpenMobile && <span style={{ fontSize: '0.8125rem' }}>Đăng xuất</span>}
             </button>
           </div>
         </div>

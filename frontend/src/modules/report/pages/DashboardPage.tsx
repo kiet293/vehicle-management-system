@@ -138,7 +138,7 @@ export const DashboardPage: React.FC = () => {
       )}
 
       {/* 4 Metric KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+      <div className="responsive-kpi-grid">
         {/* Card 1: Total Vehicles */}
         <div className="glass-panel" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -294,7 +294,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Chart Section: 2 Columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1.5rem' }}>
+      <div className="responsive-charts-grid">
         {/* Left: Monthly Trend Bar Chart */}
         <div className="glass-panel" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -326,7 +326,7 @@ export const DashboardPage: React.FC = () => {
           {isLoading ? (
             <Skeleton height="220px" borderRadius="12px" />
           ) : (
-            <div style={{ height: '220px', display: 'flex', alignItems: 'flex-end', gap: '0.625rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
+            <div style={{ height: '220px', display: 'flex', alignItems: 'flex-end', gap: '0.625rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)', position: 'relative', overflowX: 'auto', minWidth: 0 }}>
               {monthlyTrends.map((t) => {
                 const heightPct = Math.max(Math.round((Number(t.amount) / maxTrendAmount) * 100), 4);
                 const isHovered = hoveredMonth?.month === t.month;
