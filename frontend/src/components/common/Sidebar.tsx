@@ -96,6 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             alignItems: 'center',
             justifyContent: 'space-between',
             borderBottom: '1px solid var(--border-color)',
+            flexShrink: 0,
           }}
         >
           <div
@@ -149,7 +150,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation Items */}
-        <nav style={{ padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.375rem', flex: 1 }}>
+        <nav
+          style={{
+            padding: '1rem 0.75rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.375rem',
+            flex: 1,
+            overflowY: 'auto',
+            minHeight: 0,
+          }}
+        >
           {visibleItems.map((item) => {
             const isActive = currentPath === item.path;
             return (
@@ -191,7 +202,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* User Card & Collapse Toggle */}
-        <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.75rem' }}>
+        <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.75rem', flexShrink: 0, marginTop: 'auto' }}>
           {user && (!isCollapsed || isOpenMobile) && (
             <div
               style={{
