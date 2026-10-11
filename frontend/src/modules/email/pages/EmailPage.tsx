@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { emailService } from '../services/emailService';
-import { EmailLog, EmailType } from '../types';
+import { vehicleService } from '../../vehicle/services/vehicleService';
+import { EmailLog, EmailType, Vehicle } from '../../../types';
 import { useToast } from '../../../context/ToastContext';
 import { TableSkeleton } from '../../../components/common/Skeleton';
 import { EmptyState } from '../../../components/common/EmptyState';
-import { EmailComposerModal } from '../components/EmailComposerModal';
 import { EmailLogDetailModal } from '../components/EmailLogDetailModal';
 import { EmailStatsCards } from '../components/EmailStatsCards';
+import { ActiveIncidentsPanel } from '../components/ActiveIncidentsPanel';
+import { VehicleIncidentModal } from '../components/VehicleIncidentModal';
 import {
   Bell,
   Mail,
@@ -16,7 +18,6 @@ import {
   Clock,
   RotateCcw,
   Sparkles,
-  Plus,
   Search,
   Filter,
   Eye,
@@ -30,18 +31,17 @@ export const EmailPage: React.FC = () => {
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [filterDays, setFilterDays] = useState(30);
 
+  // Vehicle incident data
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
+  const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
+  const [selectedIncidentVehicle, setSelectedIncidentVehicle] = useState<Vehicle | null>(null);
+
   // Search & Type Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
   // Modals state
-  const [isComposerOpen, setIsComposerOpen] = useState(false);
-  const [composerInitialData, setComposerInitialData] = useState<{
-    recipient?: string;
-    subject?: string;
-    content?: string;
-    type?: EmailType;
-  }>({});
   const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
 
   // Latest Send Status Banner Feedback
@@ -66,9 +66,27 @@ export const EmailPage: React.FC = () => {
     }
   };
 
+  const fetchVehicles = async () => {
+    setIsLoadingVehicles(true);
+    try {
+      const data = await vehicleService.getVehicles();
+      setVehicles(data);
+    } catch {
+      // Graceful fallback
+    } finally {
+      setIsLoadingVehicles(false);
+    }
+  };
+
   useEffect(() => {
     fetchLogs();
+    fetchVehicles();
   }, [filterDays]);
+
+  const handleOpenIncidentModal = (vehicle?: Vehicle | null) => {
+    setSelectedIncidentVehicle(vehicle || null);
+    setIsIncidentModalOpen(true);
+  };
 
   const handleSendQuickTest = async (type: EmailType) => {
     setIsSendingTest(true);
@@ -120,27 +138,23 @@ export const EmailPage: React.FC = () => {
     }
   };
 
-  const handleOpenComposer = (preset?: {
-    recipient?: string;
-    subject?: string;
-    content?: string;
-    type?: EmailType;
-  }) => {
-    if (preset) {
-      setComposerInitialData(preset);
-    } else {
-      setComposerInitialData({});
+  const handleResendFromLog = async (log: EmailLog) => {
+    try {
+      const res = await emailService.sendEmail({
+        to: log.recipient,
+        subject: log.subject,
+        content: log.content,
+        type: log.type,
+      });
+      if (res.success) {
+        showToast('success', `Đã tự động gửi lại thông báo tới: ${log.recipient}`);
+        fetchLogs();
+      } else {
+        showToast('error', res.message || 'Gửi lại email thất bại');
+      }
+    } catch {
+      showToast('error', 'Lỗi kết nối khi gửi lại email');
     }
-    setIsComposerOpen(true);
-  };
-
-  const handleResendFromLog = (log: EmailLog) => {
-    handleOpenComposer({
-      recipient: log.recipient,
-      subject: log.subject,
-      content: log.content,
-      type: log.type,
-    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -177,6 +191,8 @@ export const EmailPage: React.FC = () => {
         return <span className="badge badge-purple">GỬI THỦ CÔNG</span>;
       case 'TEST':
         return <span className="badge badge-neutral">KIỂM TRA (TEST)</span>;
+      case 'AUTO_NOTIFICATION':
+        return <span className="badge badge-success">TỰ ĐỘNG (AUTO)</span>;
       default:
         return <span className="badge badge-neutral">THÔNG BÁO</span>;
     }
@@ -219,7 +235,7 @@ export const EmailPage: React.FC = () => {
               Dịch Vụ Email &amp; Cảnh Báo Bảo Dưỡng
             </h2>
             <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0 }}>
-              Backend Email Service (Port 8084) • Tự động gửi cảnh báo &amp; Hỗ trợ gửi thủ công
+              Backend Email Service (Port 8084) • Tự động gửi cảnh báo &amp; Giám sát hoạt động
             </p>
           </div>
         </div>
@@ -227,15 +243,15 @@ export const EmailPage: React.FC = () => {
         {/* Action Buttons Header */}
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
-            onClick={() => handleOpenComposer()}
+            onClick={() => handleOpenIncidentModal()}
             className="btn btn-primary"
             style={{ fontWeight: 600 }}
           >
-            <Plus size={16} />
-            <span>Soạn &amp; Gửi Email</span>
+            <AlertTriangle size={15} />
+            <span>Thông Báo Sự Cố Cho Khách Hàng</span>
           </button>
 
-          <button onClick={fetchLogs} className="btn btn-secondary btn-sm" title="Làm mới danh sách">
+          <button onClick={fetchLogs} className="btn btn-secondary" title="Làm mới danh sách">
             <RotateCcw size={14} /> Làm mới
           </button>
         </div>
@@ -294,6 +310,14 @@ export const EmailPage: React.FC = () => {
 
       {/* Summary Stats Overview */}
       <EmailStatsCards logs={logs} />
+
+      {/* Active Incidents & Issue Alert Section */}
+      <ActiveIncidentsPanel
+        vehicles={vehicles}
+        isLoading={isLoadingVehicles}
+        onSelectIncidentVehicle={(v) => handleOpenIncidentModal(v)}
+        onOpenGeneralIncident={() => handleOpenIncidentModal()}
+      />
 
       {/* Quick Test Trigger Panel */}
       <div
@@ -403,6 +427,7 @@ export const EmailPage: React.FC = () => {
               onChange={(e) => setTypeFilter(e.target.value)}
             >
               <option value="ALL">Tất cả loại cảnh báo</option>
+              <option value="AUTO_NOTIFICATION">Tự động (Auto)</option>
               <option value="MAINTENANCE_ALERT">Cảnh báo bảo dưỡng</option>
               <option value="HIGH_COST_ALERT">Chi phí đột biến</option>
               <option value="ASSIGNMENT_NOTIFICATION">Bàn giao xe</option>
@@ -436,8 +461,8 @@ export const EmailPage: React.FC = () => {
               ? 'Thử điều chỉnh từ khóa tìm kiếm hoặc chọn loại cảnh báo khác.'
               : 'Hệ thống sẽ tự động ghi nhận khi các thông báo bảo dưỡng hoặc chi phí phát sinh.'
           }
-          actionText="Soạn &amp; Gửi Email Mới"
-          onAction={() => handleOpenComposer()}
+          actionText="Làm mới danh sách"
+          onAction={fetchLogs}
         />
       ) : (
         <div className="data-table-container">
@@ -511,25 +536,24 @@ export const EmailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Compose & Send Modal */}
-      <EmailComposerModal
-        isOpen={isComposerOpen}
-        onClose={() => setIsComposerOpen(false)}
-        onSuccess={() => {
-          fetchLogs();
-        }}
-        initialRecipient={composerInitialData.recipient}
-        initialSubject={composerInitialData.subject}
-        initialContent={composerInitialData.content}
-        initialType={composerInitialData.type}
-      />
-
       {/* Log Detail Modal */}
       <EmailLogDetailModal
         isOpen={selectedLog !== null}
         log={selectedLog}
         onClose={() => setSelectedLog(null)}
         onResend={handleResendFromLog}
+      />
+
+      {/* Vehicle Incident Notification Modal */}
+      <VehicleIncidentModal
+        isOpen={isIncidentModalOpen}
+        onClose={() => setIsIncidentModalOpen(false)}
+        onSuccess={() => {
+          fetchLogs();
+          fetchVehicles();
+        }}
+        vehicles={vehicles}
+        initialVehicle={selectedIncidentVehicle}
       />
     </div>
   );

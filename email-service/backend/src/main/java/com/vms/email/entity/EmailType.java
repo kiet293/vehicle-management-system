@@ -5,5 +5,6 @@ public enum EmailType {
     HIGH_COST_ALERT,
     ASSIGNMENT_NOTIFICATION,
     TEST,
-    MANUAL
+    MANUAL,
+    AUTO_NOTIFICATION
 }
