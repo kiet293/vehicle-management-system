@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { emailService } from '../../modules/email/services/emailService';
@@ -19,9 +20,15 @@ import {
 interface NavbarProps {
   onToggleMobileMenu: () => void;
   pageTitle?: string;
+  onOpenProfile?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 'Dashboard' }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onToggleMobileMenu,
+  pageTitle = 'Dashboard',
+  onOpenProfile,
+}) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [alerts, setAlerts] = useState<EmailLog[]>([]);
@@ -226,12 +233,64 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
 
         {/* User Info & Badge */}
         {user && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div
+            onClick={() => {
+              if (onOpenProfile) onOpenProfile();
+              else navigate('/profile');
+            }}
+            role="button"
+            tabIndex={0}
+            title="Nhấn để xem & chỉnh sửa hồ sơ tài khoản"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (onOpenProfile) onOpenProfile();
+                else navigate('/profile');
+              }
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.35rem 0.65rem',
+              borderRadius: '9999px',
+              cursor: 'pointer',
+              transition: 'background 0.2s ease, border-color 0.2s ease',
+              border: '1px solid transparent',
+              userSelect: 'none',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--bg-card-hover)';
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = 'transparent';
+            }}
+          >
             <div style={{ textAlign: 'right' }}>
               <div className="navbar-user-name" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
                 {user.fullName}
               </div>
               <div style={{ marginTop: '2px' }}>{getRoleBadge()}</div>
+            </div>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--accent-blue), #8b5cf6)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)',
+                flexShrink: 0,
+              }}
+            >
+              {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
           </div>
         )}
