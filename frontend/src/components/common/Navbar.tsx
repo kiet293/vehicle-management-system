@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { emailService } from '../../modules/email/services/emailService';
 import { EmailLog } from '../../types';
 import {
@@ -11,6 +12,8 @@ import {
   ExternalLink,
   AlertTriangle,
   Clock,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -20,6 +23,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 'Dashboard' }) => {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [alerts, setAlerts] = useState<EmailLog[]>([]);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -87,6 +91,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
       </div>
 
       <div className="vms-navbar-actions">
+        {/* Theme Toggle Button (Light/Dark Mode) */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="btn btn-secondary btn-icon"
+          title={theme === 'dark' ? 'Chuyển sang chế độ Sáng (Light mode)' : 'Chuyển sang chế độ Tối (Dark mode)'}
+          aria-label="Đổi giao diện Sáng / Tối"
+          style={{ transition: 'all 0.25s ease' }}
+        >
+          {theme === 'dark' ? (
+            <Sun size={18} color="var(--accent-amber)" />
+          ) : (
+            <Moon size={18} color="var(--accent-purple)" />
+          )}
+        </button>
+
         {/* Notification Bell with Dropdown */}
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button
@@ -120,10 +140,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
                 top: 'calc(100% + 8px)',
                 right: 0,
                 width: '360px',
-                background: '#111827',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'var(--bg-modal)',
+                border: '1px solid var(--border-modal)',
                 borderRadius: '16px',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
                 zIndex: 100,
                 overflow: 'hidden',
                 animation: 'slideUp 0.2s ease-out',

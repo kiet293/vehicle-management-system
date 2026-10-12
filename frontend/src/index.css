@@ -31,6 +31,62 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
   --shadow-glow: 0 0 25px rgba(59, 130, 246, 0.2);
+
+  /* Component Level Backgrounds & Borders */
+  --bg-sidebar: rgba(10, 14, 23, 0.96);
+  --bg-navbar: rgba(10, 14, 23, 0.85);
+  --bg-footer: rgba(10, 14, 23, 0.95);
+  --bg-modal: #111827;
+  --bg-modal-footer: rgba(0, 0, 0, 0.2);
+  --bg-input: rgba(15, 23, 42, 0.6);
+  --bg-input-focus: rgba(15, 23, 42, 0.85);
+  --border-input: var(--border-color);
+  --bg-btn-secondary: rgba(255, 255, 255, 0.05);
+  --bg-btn-secondary-hover: rgba(255, 255, 255, 0.1);
+  --bg-table-th: rgba(255, 255, 255, 0.03);
+  --bg-table-hover: rgba(255, 255, 255, 0.02);
+  --border-table-row: rgba(255, 255, 255, 0.04);
+  --bg-auth-card: rgba(17, 24, 39, 0.9);
+  --bg-user-card: rgba(255, 255, 255, 0.03);
+  --border-modal: rgba(255, 255, 255, 0.12);
+}
+
+/* Light Theme System */
+[data-theme='light'] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-hover: #ffffff;
+  --border-color: rgba(226, 232, 240, 0.9);
+  --border-glow: rgba(59, 130, 246, 0.4);
+
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #94a3b8;
+
+  --gradient-card: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.92) 100%);
+  --gradient-glow: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
+
+  --bg-sidebar: rgba(255, 255, 255, 0.96);
+  --bg-navbar: rgba(255, 255, 255, 0.88);
+  --bg-footer: rgba(255, 255, 255, 0.95);
+  --bg-modal: #ffffff;
+  --bg-modal-footer: #f8fafc;
+  --bg-input: #ffffff;
+  --bg-input-focus: #ffffff;
+  --border-input: #cbd5e1;
+  --bg-btn-secondary: rgba(15, 23, 42, 0.05);
+  --bg-btn-secondary-hover: rgba(15, 23, 42, 0.09);
+  --bg-table-th: rgba(241, 245, 249, 0.95);
+  --bg-table-hover: rgba(241, 245, 249, 0.65);
+  --border-table-row: rgba(226, 232, 240, 0.9);
+  --bg-auth-card: rgba(255, 255, 255, 0.95);
+  --bg-user-card: rgba(15, 23, 42, 0.04);
+  --border-modal: rgba(226, 232, 240, 0.9);
 }
 
 * {
@@ -139,14 +195,14 @@ body::before {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-btn-secondary);
   color: var(--text-main);
   border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--bg-btn-secondary-hover);
+  border-color: var(--border-color);
 }
 
 .btn-danger {
@@ -266,8 +322,8 @@ body::before {
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
   color: var(--text-main);
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
   border-radius: 10px;
   outline: none;
   font-family: var(--font-sans);
@@ -277,7 +333,7 @@ body::before {
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   border-color: var(--accent-blue);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--bg-input-focus);
 }
 
 .form-input.input-error, .form-select.input-error {
@@ -310,8 +366,8 @@ body::before {
 }
 
 .modal-box {
-  background: #111827;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg-modal);
+  border: 1px solid var(--border-modal);
   border-radius: 20px;
   width: 100%;
   max-width: 580px;
@@ -340,7 +396,7 @@ body::before {
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-modal-footer);
 }
 
 @keyframes fadeIn {
@@ -388,7 +444,7 @@ body::before {
 
 .data-table th {
   padding: 0.875rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-table-th);
   font-weight: 600;
   color: var(--text-muted);
   border-bottom: 1px solid var(--border-color);
@@ -399,7 +455,7 @@ body::before {
 
 .data-table td {
   padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-table-row);
   color: var(--text-main);
   vertical-align: middle;
 }
@@ -409,7 +465,7 @@ body::before {
 }
 
 .data-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-table-hover);
 }
 
 .data-table tfoot td {
@@ -485,7 +541,7 @@ body::before {
 .vms-footer {
   border-top: 1px solid var(--border-color);
   padding: 1.25rem 2rem;
-  background-color: rgba(10, 14, 23, 0.95);
+  background-color: var(--bg-footer);
   margin-top: auto;
   box-sizing: border-box;
   flex-shrink: 0;
@@ -506,13 +562,13 @@ body::before {
 /* Sidebar Drawer & Fixed Desktop */
 .vms-sidebar {
   width: 260px;
-  background: rgba(10, 14, 23, 0.96);
+  background: var(--bg-sidebar);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease;
   position: relative;
   height: 100vh;
   z-index: 95;
@@ -531,7 +587,7 @@ body::before {
 /* Navbar */
 .vms-navbar {
   border-bottom: 1px solid var(--border-color);
-  background-color: rgba(10, 14, 23, 0.85);
+  background-color: var(--bg-navbar);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   position: sticky;
@@ -544,6 +600,7 @@ body::before {
   box-sizing: border-box;
   width: 100%;
   flex-shrink: 0;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .vms-navbar-brand-col {
@@ -601,12 +658,14 @@ body::before {
 .vms-auth-card {
   width: 100%;
   padding: 2.5rem;
-  background-color: rgba(17, 24, 39, 0.9);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  background-color: var(--bg-auth-card);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
   border-radius: 24px;
   position: relative;
   z-index: 10;
   box-sizing: border-box;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 /* Visibility Utilities */

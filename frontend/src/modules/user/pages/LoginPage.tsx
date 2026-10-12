@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { 
   Car, 
   Eye, 
@@ -12,7 +13,9 @@ import {
   Truck, 
   UserPlus, 
   LogIn, 
-  CreditCard
+  CreditCard,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { Role } from '../../../types';
 
@@ -23,6 +26,7 @@ interface LoginPageProps {
 export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) => {
   const { login, register, isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
+  const { theme, toggleTheme } = useTheme();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>(initialMode);
 
@@ -232,6 +236,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
         position: 'relative',
       }}
     >
+      {/* Theme Toggle Button in Top-Right Corner */}
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="btn btn-secondary btn-icon"
+        title={theme === 'dark' ? 'Chuyển sang chế độ Sáng (Light mode)' : 'Chuyển sang chế độ Tối (Dark mode)'}
+        aria-label="Đổi giao diện Sáng / Tối"
+        style={{
+          position: 'absolute',
+          top: '1.25rem',
+          right: '1.25rem',
+          zIndex: 20,
+          boxShadow: 'var(--shadow-sm)',
+        }}
+      >
+        {theme === 'dark' ? (
+          <Sun size={18} color="var(--accent-amber)" />
+        ) : (
+          <Moon size={18} color="var(--accent-purple)" />
+        )}
+      </button>
+
       <div
         className="glass-panel vms-auth-card"
         style={{
