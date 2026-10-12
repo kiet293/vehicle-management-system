@@ -73,6 +73,11 @@ export const userService = {
     const res = await apiClient.get<ApiResponse<User[]>>('/api/users/drivers/available');
     return res.data.data || [];
   },
+
+  getProfile: async (): Promise<User> => {
+    const res = await apiClient.get<ApiResponse<User>>('/api/auth/me');
+    return res.data.data;
+  },
 };
 
 export default userService;

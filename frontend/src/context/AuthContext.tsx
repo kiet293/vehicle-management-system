@@ -9,6 +9,8 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<User>;
   register: (data: RegisterData) => Promise<User>;
   logout: () => void;
+  updateUser: (updatedUser: User) => void;
+  refreshUser: () => Promise<User | null>;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isManager: boolean;
@@ -80,6 +82,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.location.href = '/login';
   }, []);
 
+  const updateUser = useCallback((updatedUser: User) => {
+    setUser(updatedUser);
+  }, []);
+
+  const refreshUser = useCallback(async (): Promise<User | null> => {
+    try {
+      const res = await apiClient.get<ApiResponse<User>>('/api/auth/me');
+      if (res.data.success && res.data.data) {
+        setUser(res.data.data);
+        return res.data.data;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }, []);
+
   const isAdmin = user?.role === 'ADMIN';
   const isManager = user?.role === 'MANAGER';
   const isDriver = user?.role === 'DRIVER';
@@ -92,6 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       register,
       logout,
+      updateUser,
+      refreshUser,
       isAuthenticated,
       isAdmin,
       isManager,

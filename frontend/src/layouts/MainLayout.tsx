@@ -29,6 +29,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     if (path.startsWith('/costs')) return 'Kê khai & Đối soát Chi phí Vận hành';
     if (path.startsWith('/users')) return 'Quản lý Nhân sự & Phân quyền Tài xế';
     if (path.startsWith('/emails')) return 'Nhật ký Cảnh báo & Thông báo Email';
+    if (path.startsWith('/profile')) return 'Hồ sơ cá nhân & Cài đặt tài khoản';
     return 'Hệ thống Quản lý Đội xe VMS';
   };
 
