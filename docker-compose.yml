@@ -77,6 +77,7 @@ services:
       DB_NAME: vehicle_db
       DB_USERNAME: ${DB_USERNAME:-vms_user}
       DB_PASSWORD: ${DB_PASSWORD:-vms_password}
+      EMAIL_SERVICE_URL: http://email-service:8084
     depends_on:
       mysql:
         condition: service_healthy
@@ -101,6 +102,7 @@ services:
       DB_NAME: cost_db
       DB_USERNAME: ${DB_USERNAME:-vms_user}
       DB_PASSWORD: ${DB_PASSWORD:-vms_password}
+      EMAIL_SERVICE_URL: http://email-service:8084
     depends_on:
       mysql:
         condition: service_healthy
@@ -148,9 +150,15 @@ services:
       DB_NAME: report_db
       DB_USERNAME: ${DB_USERNAME:-vms_user}
       DB_PASSWORD: ${DB_PASSWORD:-vms_password}
+      VEHICLE_SERVICE_URL: http://vehicle-service:8082
+      COST_SERVICE_URL: http://cost-service:8083
     depends_on:
       mysql:
         condition: service_healthy
+      vehicle-service:
+        condition: service_started
+      cost-service:
+        condition: service_started
     networks:
       - vehicle-management-network
 
