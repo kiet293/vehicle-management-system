@@ -174,10 +174,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   gap: '0.75rem',
                   padding: '0.625rem 0.875rem',
                   borderRadius: '10px',
-                  color: isActive ? '#ffffff' : 'var(--text-muted)',
-                  background: isActive ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%)' : 'transparent',
+                  color: isActive ? 'var(--accent-blue)' : 'var(--text-muted)',
+                  background: isActive ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.12) 100%)' : 'transparent',
                   border: isActive ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid transparent',
-                  fontWeight: isActive ? 600 : 500,
+                  fontWeight: isActive ? 700 : 500,
                   fontSize: '0.875rem',
                   transition: 'all 0.15s ease',
                   whiteSpace: 'nowrap',
@@ -186,7 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   textAlign: 'left',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                  if (!isActive) e.currentTarget.style.background = 'var(--bg-btn-secondary)';
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) e.currentTarget.style.background = 'transparent';
@@ -211,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 gap: '0.625rem',
                 padding: '0.5rem',
                 borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'var(--bg-user-card)',
                 marginBottom: '0.5rem',
               }}
             >
