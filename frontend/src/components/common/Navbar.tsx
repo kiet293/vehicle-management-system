@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { emailService } from '../../modules/email/services/emailService';
 import { EmailLog } from '../../types';
 import {
@@ -11,15 +13,24 @@ import {
   ExternalLink,
   AlertTriangle,
   Clock,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface NavbarProps {
   onToggleMobileMenu: () => void;
   pageTitle?: string;
+  onOpenProfile?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 'Dashboard' }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onToggleMobileMenu,
+  pageTitle = 'Dashboard',
+  onOpenProfile,
+}) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [alerts, setAlerts] = useState<EmailLog[]>([]);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -87,6 +98,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
       </div>
 
       <div className="vms-navbar-actions">
+        {/* Theme Toggle Button (Light/Dark Mode) */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="btn btn-secondary btn-icon"
+          title={theme === 'dark' ? 'Chuyển sang chế độ Sáng (Light mode)' : 'Chuyển sang chế độ Tối (Dark mode)'}
+          aria-label="Đổi giao diện Sáng / Tối"
+          style={{ transition: 'all 0.25s ease' }}
+        >
+          {theme === 'dark' ? (
+            <Sun size={18} color="var(--accent-amber)" />
+          ) : (
+            <Moon size={18} color="var(--accent-purple)" />
+          )}
+        </button>
+
         {/* Notification Bell with Dropdown */}
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button
@@ -120,10 +147,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
                 top: 'calc(100% + 8px)',
                 right: 0,
                 width: '360px',
-                background: '#111827',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'var(--bg-modal)',
+                border: '1px solid var(--border-modal)',
                 borderRadius: '16px',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
                 zIndex: 100,
                 overflow: 'hidden',
                 animation: 'slideUp 0.2s ease-out',
@@ -206,12 +233,64 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
 
         {/* User Info & Badge */}
         {user && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div
+            onClick={() => {
+              if (onOpenProfile) onOpenProfile();
+              else navigate('/profile');
+            }}
+            role="button"
+            tabIndex={0}
+            title="Nhấn để xem & chỉnh sửa hồ sơ tài khoản"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (onOpenProfile) onOpenProfile();
+                else navigate('/profile');
+              }
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.35rem 0.65rem',
+              borderRadius: '9999px',
+              cursor: 'pointer',
+              transition: 'background 0.2s ease, border-color 0.2s ease',
+              border: '1px solid transparent',
+              userSelect: 'none',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--bg-card-hover)';
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = 'transparent';
+            }}
+          >
             <div style={{ textAlign: 'right' }}>
               <div className="navbar-user-name" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
                 {user.fullName}
               </div>
               <div style={{ marginTop: '2px' }}>{getRoleBadge()}</div>
+            </div>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--accent-blue), #8b5cf6)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)',
+                flexShrink: 0,
+              }}
+            >
+              {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
           </div>
         )}

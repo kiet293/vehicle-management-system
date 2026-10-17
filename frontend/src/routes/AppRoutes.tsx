@@ -5,6 +5,7 @@ import { DashboardPage } from '../modules/report/pages/DashboardPage';
 import { VehiclePage } from '../modules/vehicle/pages/VehiclePage';
 import { CostPage } from '../modules/cost/pages/CostPage';
 import { UserPage } from '../modules/user/pages/UserPage';
+import { ProfilePage } from '../modules/user/pages/ProfilePage';
 import { EmailPage } from '../modules/email/pages/EmailPage';
 import { NotFoundPage } from '../components/common/NotFoundPage';
 import { MainLayout } from '../layouts/MainLayout';
@@ -73,6 +74,18 @@ export const AppRoutes: React.FC = () => {
             <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
               <MainLayout>
                 <EmailPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* User Profile Page: All authenticated roles */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'DRIVER']}>
+              <MainLayout>
+                <ProfilePage />
               </MainLayout>
             </ProtectedRoute>
           }

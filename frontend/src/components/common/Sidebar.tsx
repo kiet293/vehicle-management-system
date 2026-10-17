@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -19,6 +20,7 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,6 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   isOpenMobile,
   onCloseMobile,
+  onOpenProfile,
 }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -62,6 +65,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Nhật ký Cảnh báo',
       icon: <Bell size={20} />,
       roles: ['ADMIN', 'MANAGER'],
+    },
+    {
+      path: '/profile',
+      label: 'Hồ sơ cá nhân',
+      icon: <User size={20} />,
+      roles: ['ADMIN', 'MANAGER', 'DRIVER'],
     },
   ];
 
@@ -174,10 +183,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   gap: '0.75rem',
                   padding: '0.625rem 0.875rem',
                   borderRadius: '10px',
-                  color: isActive ? '#ffffff' : 'var(--text-muted)',
-                  background: isActive ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%)' : 'transparent',
+                  color: isActive ? 'var(--accent-blue)' : 'var(--text-muted)',
+                  background: isActive ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.12) 100%)' : 'transparent',
                   border: isActive ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid transparent',
-                  fontWeight: isActive ? 600 : 500,
+                  fontWeight: isActive ? 700 : 500,
                   fontSize: '0.875rem',
                   transition: 'all 0.15s ease',
                   whiteSpace: 'nowrap',
@@ -186,7 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   textAlign: 'left',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                  if (!isActive) e.currentTarget.style.background = 'var(--bg-btn-secondary)';
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) e.currentTarget.style.background = 'transparent';
@@ -205,14 +214,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.75rem', flexShrink: 0, marginTop: 'auto' }}>
           {user && (!isCollapsed || isOpenMobile) && (
             <div
+              onClick={() => {
+                if (onOpenProfile) onOpenProfile();
+                else handleNavigate('/profile');
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.625rem',
                 padding: '0.5rem',
                 borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'var(--bg-user-card)',
                 marginBottom: '0.5rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              title="Bấm để xem và chỉnh sửa hồ sơ tài khoản"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--bg-btn-secondary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--bg-user-card)';
               }}
             >
               <div
@@ -239,6 +261,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {user.role}
                 </div>
               </div>
+            </div>
+          )}
+
+          {user && isCollapsed && !isOpenMobile && (
+            <div
+              onClick={() => {
+                if (onOpenProfile) onOpenProfile();
+                else handleNavigate('/profile');
+              }}
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                background: 'rgba(59, 130, 246, 0.2)',
+                color: 'var(--accent-blue)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                margin: '0 auto 0.5rem auto',
+                cursor: 'pointer',
+                transition: 'transform 0.15s ease',
+              }}
+              title={`Hồ sơ cá nhân: ${user.fullName} (${user.role})`}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
           )}
 
