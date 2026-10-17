@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -19,6 +20,7 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,6 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   isOpenMobile,
   onCloseMobile,
+  onOpenProfile,
 }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -62,6 +65,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Nhật ký Cảnh báo',
       icon: <Bell size={20} />,
       roles: ['ADMIN', 'MANAGER'],
+    },
+    {
+      path: '/profile',
+      label: 'Hồ sơ cá nhân',
+      icon: <User size={20} />,
+      roles: ['ADMIN', 'MANAGER', 'DRIVER'],
     },
   ];
 
@@ -209,6 +218,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div style={{ borderTop: '1px solid var(--border-color)', padding: isCollapsed && !isOpenMobile ? '0.75rem 0.5rem' : '0.75rem', flexShrink: 0, marginTop: 'auto' }}>
           {user && (!isCollapsed || isOpenMobile) && (
             <div
+              onClick={() => {
+                if (onOpenProfile) onOpenProfile();
+                else handleNavigate('/profile');
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -217,6 +230,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 borderRadius: '8px',
                 background: 'var(--bg-user-card)',
                 marginBottom: '0.5rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              title="Bấm để xem và chỉnh sửa hồ sơ tài khoản"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--bg-btn-secondary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--bg-user-card)';
               }}
             >
               <div
@@ -248,29 +270,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {user && isCollapsed && !isOpenMobile && (
             <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                marginBottom: '0.5rem',
+              onClick={() => {
+                if (onOpenProfile) onOpenProfile();
+                else handleNavigate('/profile');
               }}
-              title={`${user.fullName} (${user.role})`}
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                background: 'rgba(59, 130, 246, 0.2)',
+                color: 'var(--accent-blue)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                margin: '0 auto 0.5rem auto',
+                cursor: 'pointer',
+                transition: 'transform 0.15s ease',
+              }}
+              title={`Hồ sơ cá nhân: ${user.fullName} (${user.role})`}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
             >
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: 'rgba(59, 130, 246, 0.2)',
-                  color: 'var(--accent-blue)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                }}
-              >
-                {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
-              </div>
+              {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
           )}
 
