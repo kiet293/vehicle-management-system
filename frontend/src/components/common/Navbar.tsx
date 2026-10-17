@@ -17,11 +17,16 @@ import {
 } from 'lucide-react';
 
 interface NavbarProps {
-  onToggleMobileMenu: () => void;
+  onToggleSidebar: () => void;
   pageTitle?: string;
+  isSidebarCollapsed?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 'Dashboard' }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onToggleSidebar,
+  pageTitle = 'Dashboard',
+  isSidebarCollapsed = false,
+}) => {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [alerts, setAlerts] = useState<EmailLog[]>([]);
@@ -70,12 +75,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu, pageTitle = 
   return (
     <header className="vms-navbar">
       <div className="vms-navbar-brand-col">
-        {/* Mobile Hamburger */}
+        {/* Toggle Sidebar Button (Desktop collapse & Mobile drawer) */}
         <button
-          onClick={onToggleMobileMenu}
+          type="button"
+          onClick={onToggleSidebar}
           className="btn btn-secondary btn-icon"
           id="hamburger-btn"
-          aria-label="Mở menu"
+          title={isSidebarCollapsed ? 'Mở rộng bảng chức năng' : 'Thu gọn bảng chức năng'}
+          aria-label="Thu gọn hoặc mở rộng bảng chức năng"
         >
           <Menu size={20} />
         </button>
