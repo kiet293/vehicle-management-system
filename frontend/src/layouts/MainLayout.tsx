@@ -33,6 +33,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     return 'Hệ thống Quản lý Đội xe VMS';
   };
 
+  const handleToggleSidebar = () => {
+    if (window.innerWidth <= 768) {
+      setIsOpenMobile((prev) => !prev);
+    } else {
+      toggleCollapse();
+    }
+  };
+
   return (
     <div className="vms-layout-root">
       {/* Top subtle blue progress indicator */}
@@ -58,24 +66,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       <div className="vms-content-column">
         <Navbar
-          onToggleMobileMenu={() => setIsOpenMobile((prev) => !prev)}
+          onToggleSidebar={handleToggleSidebar}
+          isSidebarCollapsed={isCollapsed}
           pageTitle={getPageTitle(currentPath)}
         />
 
         <main className="vms-main-content">
           {children}
         </main>
-
-        <footer className="vms-footer">
-          <div className="vms-footer-content">
-            <div>
-              Vehicle Management System (VMS) • Cloud Computing & Microservices Architecture
-            </div>
-            <div>
-              Spring Boot 3.3.4 • Java 21 • React 18 • MySQL 8.0 • Docker Compose
-            </div>
-          </div>
-        </footer>
       </div>
     </div>
   );
