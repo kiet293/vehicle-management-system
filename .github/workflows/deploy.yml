@@ -35,6 +35,7 @@ jobs:
 
             echo "Build and restart Docker containers..."
             docker compose up -d --build
+            docker compose restart api-gateway
 
             echo "Deployment completed."
             docker compose ps

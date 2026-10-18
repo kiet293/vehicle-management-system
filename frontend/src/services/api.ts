@@ -1,7 +1,23 @@
 import axios, { AxiosInstance } from 'axios';
 
-// Base URL configured via environment variable (default: API Gateway at http://localhost:8080)
-const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+// Base URL configured via environment variable (or auto-detected from browser hostname for remote deployments)
+const getApiBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl !== 'http://localhost:8080') {
+    return envUrl;
+  }
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    return `${window.location.protocol}//${window.location.hostname}:8080`;
+  }
+  return envUrl || 'http://localhost:8080';
+};
+
+const API_BASE_URL: string = getApiBaseUrl();
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

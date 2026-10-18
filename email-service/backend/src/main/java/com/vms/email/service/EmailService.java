@@ -151,8 +151,12 @@ public class EmailService {
         EmailType emailType = (type != null) ? type : EmailType.MANUAL;
 
         String senderDisplayName = (senderName != null && !senderName.trim().isEmpty())
-                ? (from != null && !from.trim().isEmpty() ? senderName.trim() + " (" + from.trim() + ")" : senderName.trim())
+                ? senderName.trim() + " - Tài xế VMS"
                 : (from != null && !from.trim().isEmpty() ? from.trim() : productName);
+
+        String logSenderName = (senderName != null && !senderName.trim().isEmpty() && from != null && !from.trim().isEmpty())
+                ? senderName.trim() + " (" + from.trim() + ")"
+                : senderDisplayName;
 
         // Gửi qua SMTP với MimeMessageHelper
         if (mailSender != null && !fromEmail.contains("placeholder") && !fromEmail.contains("example.com")) {
@@ -190,7 +194,7 @@ public class EmailService {
 
         EmailLog logEntry = EmailLog.builder()
                 .id(logId)
-                .sender(senderDisplayName)
+                .sender(logSenderName)
                 .recipient(recipient)
                 .subject(emailSubject)
                 .content(emailContent)
