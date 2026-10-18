@@ -147,6 +147,7 @@ export const CostPage: React.FC = () => {
         vehiclePlate: targetVeh ? targetVeh.licensePlate : 'N/A',
         driverId: user?.id,
         driverName: user?.fullName,
+        driverEmail: user?.email,
         costType: formCostType,
         amount: amt,
         odometerAtCost: odometerAtCost ? parseInt(odometerAtCost, 10) : undefined,
@@ -156,7 +157,15 @@ export const CostPage: React.FC = () => {
       };
 
       const created = await costService.createCost(data);
-      showToast('success', `Đã ghi nhận phiếu chi phí ${created.amount.toLocaleString('vi-VN')} ₫ cho xe ${created.vehiclePlate}!`);
+      if (amt > 5000000) {
+        showToast(
+          'warning',
+          `⚠️ Khoản chi ${created.amount.toLocaleString('vi-VN')} ₫ vượt 5.000.000 ₫: Đã tự động gửi email cảnh báo từ tài xế (${user?.fullName || 'Tài xế'} - ${user?.email || 'driver'}) tới Quản lý (nhuttd0105@gmail.com)!`,
+          6500
+        );
+      } else {
+        showToast('success', `Đã ghi nhận phiếu chi phí ${created.amount.toLocaleString('vi-VN')} ₫ cho xe ${created.vehiclePlate}!`);
+      }
       setIsModalOpen(false);
       fetchCosts();
     } catch (err: unknown) {
@@ -338,7 +347,26 @@ export const CostPage: React.FC = () => {
                   </td>
                   <td>{getCostTypeBadge(c.costType)}</td>
                   <td className="mono" style={{ fontWeight: 700, color: Number(c.amount) > 5000000 ? 'var(--accent-rose)' : 'var(--accent-emerald)', fontSize: '0.9375rem' }}>
-                    {Number(c.amount).toLocaleString('vi-VN')} ₫
+                    <div>{Number(c.amount).toLocaleString('vi-VN')} ₫</div>
+                    {Number(c.amount) > 5000000 && (
+                      <span
+                        style={{
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                          color: 'var(--accent-amber)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '2px',
+                          background: 'rgba(245, 158, 11, 0.1)',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          marginTop: '2px',
+                        }}
+                        title="Đã gửi email cảnh báo khẩn: Từ Tài xế tới Quản lý (nhuttd0105@gmail.com)"
+                      >
+                        ⚠️ &gt; 5tr (Tới Quản lý)
+                      </span>
+                    )}
                   </td>
                   <td className="mono" style={{ color: 'var(--text-dim)' }}>
                     {c.odometerAtCost ? `${c.odometerAtCost.toLocaleString('vi-VN')} km` : '—'}
@@ -477,8 +505,8 @@ export const CostPage: React.FC = () => {
                 />
               </div>
               {rawAmount && parseInt(rawAmount, 10) > 5000000 && (
-                <div style={{ fontSize: '0.75rem', color: 'var(--accent-amber)', marginTop: '0.25rem' }}>
-                  ⚠️ Khoản chi vượt 5.000.000 ₫ sẽ tự động kích hoạt email cảnh báo khẩn tới Quản lý.
+                <div style={{ fontSize: '0.75rem', color: 'var(--accent-amber)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>⚠️ Khoản chi vượt 5.000.000 ₫ sẽ tự động gửi email cảnh báo từ tài xế ({user?.email || 'email tài xế'}) tới Quản lý (nhuttd0105@gmail.com).</span>
                 </div>
               )}
             </div>

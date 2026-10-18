@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { emailService } from '../services/emailService';
-import { vehicleService } from '../../vehicle/services/vehicleService';
-import { EmailLog, EmailType, Vehicle } from '../../../types';
+import { EmailLog, EmailType } from '../../../types';
 import { useToast } from '../../../context/ToastContext';
 import { TableSkeleton } from '../../../components/common/Skeleton';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { EmailLogDetailModal } from '../components/EmailLogDetailModal';
 import { EmailStatsCards } from '../components/EmailStatsCards';
-import { ActiveIncidentsPanel } from '../components/ActiveIncidentsPanel';
-import { VehicleIncidentModal } from '../components/VehicleIncidentModal';
 import {
   Bell,
-  Mail,
   CheckCircle2,
-  AlertTriangle,
   XCircle,
   Clock,
   RotateCcw,
@@ -21,21 +16,13 @@ import {
   Search,
   Filter,
   Eye,
-  Send,
 } from 'lucide-react';
 
 export const EmailPage: React.FC = () => {
   const { showToast } = useToast();
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSendingTest, setIsSendingTest] = useState(false);
   const [filterDays, setFilterDays] = useState(30);
-
-  // Vehicle incident data
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
-  const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
-  const [selectedIncidentVehicle, setSelectedIncidentVehicle] = useState<Vehicle | null>(null);
 
   // Search & Type Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,16 +30,6 @@ export const EmailPage: React.FC = () => {
 
   // Modals state
   const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
-
-  // Latest Send Status Banner Feedback
-  const [latestStatus, setLatestStatus] = useState<{
-    type: 'SUCCESS' | 'FAILED';
-    message: string;
-    recipient: string;
-    subject: string;
-    statusBadge: string;
-    time: string;
-  } | null>(null);
 
   const fetchLogs = async () => {
     setIsLoading(true);
@@ -66,96 +43,9 @@ export const EmailPage: React.FC = () => {
     }
   };
 
-  const fetchVehicles = async () => {
-    setIsLoadingVehicles(true);
-    try {
-      const data = await vehicleService.getVehicles();
-      setVehicles(data);
-    } catch {
-      // Graceful fallback
-    } finally {
-      setIsLoadingVehicles(false);
-    }
-  };
-
   useEffect(() => {
     fetchLogs();
-    fetchVehicles();
   }, [filterDays]);
-
-  const handleOpenIncidentModal = (vehicle?: Vehicle | null) => {
-    setSelectedIncidentVehicle(vehicle || null);
-    setIsIncidentModalOpen(true);
-  };
-
-  const handleSendQuickTest = async (type: EmailType) => {
-    setIsSendingTest(true);
-    try {
-      const result = await emailService.sendTestAlert(type);
-      if (result.success && result.data) {
-        const isSmtp = result.data.status === 'SENT';
-        const statusLabel = isSmtp ? 'ĐÃ GỬI (SMTP GMAIL)' : 'MÔ PHỎNG (MOCK_SENT)';
-        const msg = isSmtp
-          ? `Đã gửi thành công qua SMTP Gmail: "${result.data.subject}"`
-          : `Đã ghi nhận gửi thành công (Mô phỏng): "${result.data.subject}"`;
-
-        setLatestStatus({
-          type: 'SUCCESS',
-          message: msg,
-          recipient: result.data.recipient,
-          subject: result.data.subject,
-          statusBadge: statusLabel,
-          time: new Date().toLocaleTimeString('vi-VN'),
-        });
-
-        showToast('success', msg);
-        fetchLogs();
-      } else {
-        const errMsg = result.message || 'Gửi cảnh báo thử nghiệm thất bại.';
-        setLatestStatus({
-          type: 'FAILED',
-          message: errMsg,
-          recipient: 'N/A',
-          subject: type,
-          statusBadge: 'THẤT BẠI (FAILED)',
-          time: new Date().toLocaleTimeString('vi-VN'),
-        });
-        showToast('error', errMsg);
-      }
-    } catch {
-      const errMsg = 'Lỗi kết nối khi kích hoạt gửi email thử nghiệm.';
-      setLatestStatus({
-        type: 'FAILED',
-        message: errMsg,
-        recipient: 'N/A',
-        subject: type,
-        statusBadge: 'THẤT BẠI (FAILED)',
-        time: new Date().toLocaleTimeString('vi-VN'),
-      });
-      showToast('error', errMsg);
-    } finally {
-      setIsSendingTest(false);
-    }
-  };
-
-  const handleResendFromLog = async (log: EmailLog) => {
-    try {
-      const res = await emailService.sendEmail({
-        to: log.recipient,
-        subject: log.subject,
-        content: log.content,
-        type: log.type,
-      });
-      if (res.success) {
-        showToast('success', `Đã tự động gửi lại thông báo tới: ${log.recipient}`);
-        fetchLogs();
-      } else {
-        showToast('error', res.message || 'Gửi lại email thất bại');
-      }
-    } catch {
-      showToast('error', 'Lỗi kết nối khi gửi lại email');
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     if (status === 'SENT') {
@@ -188,13 +78,12 @@ export const EmailPage: React.FC = () => {
       case 'ASSIGNMENT_NOTIFICATION':
         return <span className="badge badge-info">BÀN GIAO XE</span>;
       case 'MANUAL':
-        return <span className="badge badge-purple">GỬI THỦ CÔNG</span>;
+        return <span className="badge badge-neutral">GỬI THỦ CÔNG</span>;
       case 'TEST':
         return <span className="badge badge-neutral">KIỂM TRA (TEST)</span>;
       case 'AUTO_NOTIFICATION':
-        return <span className="badge badge-success">TỰ ĐỘNG (AUTO)</span>;
       default:
-        return <span className="badge badge-neutral">THÔNG BÁO</span>;
+        return <span className="badge badge-info">TỰ ĐỘNG</span>;
     }
   };
 
@@ -215,146 +104,13 @@ export const EmailPage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Top Action Bar */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '-0.5rem' }}>
-        <button
-          onClick={() => handleOpenIncidentModal()}
-          className="btn btn-primary"
-          style={{ fontWeight: 600 }}
-        >
-          <AlertTriangle size={15} />
-          <span>Thông Báo Sự Cố Cho Khách Hàng</span>
-        </button>
-
         <button onClick={fetchLogs} className="btn btn-secondary" title="Làm mới danh sách">
           <RotateCcw size={14} /> Làm mới
         </button>
       </div>
 
-      {/* Latest Execution Status Feedback Card */}
-      {latestStatus && (
-        <div
-          className="glass-panel"
-          style={{
-            padding: '1rem 1.25rem',
-            background:
-              latestStatus.type === 'SUCCESS'
-                ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%)'
-                : 'linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(225, 29, 72, 0.08) 100%)',
-            border: `1px solid ${
-              latestStatus.type === 'SUCCESS' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(244, 63, 94, 0.35)'
-            }`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '1rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-            {latestStatus.type === 'SUCCESS' ? (
-              <CheckCircle2 size={24} color="var(--accent-emerald)" />
-            ) : (
-              <XCircle size={24} color="var(--accent-rose)" />
-            )}
-            <div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                {latestStatus.type === 'SUCCESS' ? 'TRẠNG THÁI GỬI EMAIL: THÀNH CÔNG' : 'TRẠNG THÁI GỬI EMAIL: THẤT BẠI'}
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                {latestStatus.message} • Người nhận: <span style={{ color: 'var(--accent-cyan)' }}>{latestStatus.recipient}</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span className={latestStatus.type === 'SUCCESS' ? 'badge badge-success' : 'badge badge-danger'}>
-              {latestStatus.statusBadge}
-            </span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{latestStatus.time}</span>
-            <button
-              onClick={() => setLatestStatus(null)}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: '2px 8px', fontSize: '0.75rem' }}
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Summary Stats Overview */}
       <EmailStatsCards logs={logs} />
-
-      {/* Active Incidents & Issue Alert Section */}
-      <ActiveIncidentsPanel
-        vehicles={vehicles}
-        isLoading={isLoadingVehicles}
-        onSelectIncidentVehicle={(v) => handleOpenIncidentModal(v)}
-        onOpenGeneralIncident={() => handleOpenIncidentModal()}
-      />
-
-      {/* Quick Test Trigger Panel */}
-      <div
-        className="glass-panel"
-        style={{
-          padding: '1.25rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-        }}
-      >
-        <div>
-          <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Sparkles size={16} color="var(--accent-cyan)" />
-            Nút gửi email test nhanh (Mô phỏng các kịch bản cảnh báo VMS)
-          </div>
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Nhấn vào các nút bên dưới để kiểm thử tính năng gửi cảnh báo tự động của hệ thống
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => handleSendQuickTest('MAINTENANCE_ALERT')}
-            className="btn btn-secondary btn-sm"
-            disabled={isSendingTest}
-            title="Thử gửi cảnh báo bảo dưỡng định kỳ khi xe đạt mốc 5.000 km"
-          >
-            <AlertTriangle size={14} color="var(--accent-amber)" />
-            <span>Test Cảnh Báo Bảo Dưỡng</span>
-          </button>
-
-          <button
-            onClick={() => handleSendQuickTest('HIGH_COST_ALERT')}
-            className="btn btn-secondary btn-sm"
-            disabled={isSendingTest}
-            title="Thử gửi cảnh báo chi phí đột biến > 5.000.000 ₫"
-          >
-            <Mail size={14} color="var(--accent-rose)" />
-            <span>Test Chi Phí Đột Biến</span>
-          </button>
-
-          <button
-            onClick={() => handleSendQuickTest('ASSIGNMENT_NOTIFICATION')}
-            className="btn btn-secondary btn-sm"
-            disabled={isSendingTest}
-            title="Thử gửi thông báo điều chuyển và bàn giao xe cho tài xế"
-          >
-            <Send size={14} color="var(--accent-blue)" />
-            <span>Test Bàn Giao Xe</span>
-          </button>
-
-          <button
-            onClick={() => handleSendQuickTest('TEST')}
-            className="btn btn-secondary btn-sm"
-            disabled={isSendingTest}
-            title="Gửi email test ping kiểm tra kết nối máy chủ"
-          >
-            <CheckCircle2 size={14} color="var(--accent-emerald)" />
-            <span>Test Ping SMTP</span>
-          </button>
-        </div>
-      </div>
 
       {/* Filter and Search Bar */}
       <div
@@ -463,7 +219,12 @@ export const EmailPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="mono" style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>
-                    {log.recipient}
+                    <div>{log.recipient}</div>
+                    {log.sender && (
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--accent-amber)', fontWeight: 400, marginTop: '2px' }}>
+                        Từ: {log.sender}
+                      </div>
+                    )}
                   </td>
                   <td>{getTypeBadge(log.type)}</td>
                   <td>
@@ -513,19 +274,6 @@ export const EmailPage: React.FC = () => {
         isOpen={selectedLog !== null}
         log={selectedLog}
         onClose={() => setSelectedLog(null)}
-        onResend={handleResendFromLog}
-      />
-
-      {/* Vehicle Incident Notification Modal */}
-      <VehicleIncidentModal
-        isOpen={isIncidentModalOpen}
-        onClose={() => setIsIncidentModalOpen(false)}
-        onSuccess={() => {
-          fetchLogs();
-          fetchVehicles();
-        }}
-        vehicles={vehicles}
-        initialVehicle={selectedIncidentVehicle}
       />
     </div>
   );

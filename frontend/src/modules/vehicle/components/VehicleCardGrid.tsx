@@ -18,7 +18,6 @@ interface VehicleCardGridProps {
   onDelete: (v: Vehicle) => void;
   onViewTrips: (v: Vehicle) => void;
   onChangeStatus: (v: Vehicle, status: VehicleStatus) => void;
-  onSendIncidentEmail?: (v: Vehicle) => void;
 }
 
 export const VehicleCardGrid: React.FC<VehicleCardGridProps> = ({
@@ -33,7 +32,6 @@ export const VehicleCardGrid: React.FC<VehicleCardGridProps> = ({
   onDelete,
   onViewTrips,
   onChangeStatus,
-  onSendIncidentEmail,
 }) => (
   <div className="responsive-card-grid">
     {vehicles.map((v) => {
@@ -233,33 +231,6 @@ export const VehicleCardGrid: React.FC<VehicleCardGridProps> = ({
                       : '⚠️ Phương tiện ngừng khai thác'}
                   </span>
                 </div>
-
-                {onSendIncidentEmail && (
-                  <button
-                    type="button"
-                    onClick={() => onSendIncidentEmail(v)}
-                    className="btn btn-sm"
-                    style={{
-                      width: '100%',
-                      background: 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)',
-                      color: '#ffffff',
-                      border: 'none',
-                      fontWeight: 600,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      padding: '0.45rem 0.75rem',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(239, 68, 68, 0.25)',
-                    }}
-                    title="Gửi email thông báo sự cố cho chủ xe / khách hàng"
-                  >
-                    <Mail size={14} />
-                    <span>Gửi mail thông báo sự cố cho chủ xe</span>
-                  </button>
-                )}
               </div>
             )}
 
@@ -275,7 +246,6 @@ export const VehicleCardGrid: React.FC<VehicleCardGridProps> = ({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onViewTrips={onViewTrips}
-                onSendIncidentEmail={onSendIncidentEmail}
               />
             </div>
           </div>

@@ -7,7 +7,6 @@ import {
   XCircle,
   Copy,
   AlertTriangle,
-  RotateCcw,
 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import { EmailLog } from '../types';
@@ -17,14 +16,12 @@ interface EmailLogDetailModalProps {
   log: EmailLog | null;
   isOpen: boolean;
   onClose: () => void;
-  onResend?: (log: EmailLog) => void;
 }
 
 export const EmailLogDetailModal: React.FC<EmailLogDetailModalProps> = ({
   log,
   isOpen,
   onClose,
-  onResend,
 }) => {
   const { showToast } = useToast();
 
@@ -113,9 +110,21 @@ export const EmailLogDetailModal: React.FC<EmailLogDetailModalProps> = ({
             <code style={{ fontSize: '0.8125rem', color: 'var(--accent-purple)' }}>{log.id}</code>
           </div>
 
+          {log.sender && (
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '2px' }}>
+                NGƯỜI GỬI (SENDER / TÀI XẾ)
+              </div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <User size={14} />
+                {log.sender}
+              </div>
+            </div>
+          )}
+
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '2px' }}>
-              NGƯỜI NHẬN (RECIPIENT)
+              NGƯỜI NHẬN (RECIPIENT / QUẢN LÝ)
             </div>
             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <User size={14} />
@@ -176,19 +185,6 @@ export const EmailLogDetailModal: React.FC<EmailLogDetailModalProps> = ({
           <button type="button" className="btn btn-secondary" onClick={onClose}>
             Đóng
           </button>
-          {onResend && (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => {
-                onClose();
-                onResend(log);
-              }}
-            >
-              <RotateCcw size={14} />
-              <span>Gửi lại email</span>
-            </button>
-          )}
         </div>
       </div>
     </Modal>

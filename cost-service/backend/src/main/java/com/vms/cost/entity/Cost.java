@@ -34,6 +34,9 @@ public class Cost {
     @Column(name = "driver_name", length = 100)
     private String driverName;
 
+    @Column(name = "driver_email", length = 150)
+    private String driverEmail;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "cost_type", nullable = false, length = 20)
     private CostType costType;
