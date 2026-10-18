@@ -43,17 +43,25 @@ export const DashboardPage: React.FC = () => {
     setIsLoading(true);
     setHasError(false);
     try {
-      const [sumData, trendData, typeData, topData] = await Promise.all([
+      const [sumRes, trendRes, typeRes, topRes] = await Promise.allSettled([
         reportService.getSummary(selectedYear),
         reportService.getMonthlyTrends(selectedYear),
         reportService.getCostByType(selectedYear),
         reportService.getTopVehicles(5, selectedYear),
       ]);
 
-      setSummary(sumData);
-      setMonthlyTrends(trendData);
-      setCostByType(typeData);
-      setTopVehicles(topData);
+      if (sumRes.status === 'fulfilled') setSummary(sumRes.value);
+      if (trendRes.status === 'fulfilled') setMonthlyTrends(trendRes.value);
+      if (typeRes.status === 'fulfilled') setCostByType(typeRes.value);
+      if (topRes.status === 'fulfilled') setTopVehicles(topRes.value);
+
+      const allFailed = sumRes.status === 'rejected' && trendRes.status === 'rejected' && typeRes.status === 'rejected' && topRes.status === 'rejected';
+      if (allFailed) {
+        setHasError(true);
+        showToast('error', 'Không thể nạp dữ liệu thống kê từ máy chủ');
+      } else if (sumRes.status === 'rejected' || trendRes.status === 'rejected' || typeRes.status === 'rejected' || topRes.status === 'rejected') {
+        showToast('warning', 'Một số dữ liệu thống kê tạm thời chưa khả dụng');
+      }
     } catch {
       setHasError(true);
       showToast('error', 'Không thể tải toàn bộ dữ liệu bảng điều khiển');
