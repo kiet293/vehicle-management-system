@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Area */}
         <div
           style={{
-            padding: '1.25rem',
+            padding: isCollapsed && !isOpenMobile ? '1.25rem 0.5rem' : '1.25rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -112,12 +112,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: isCollapsed && !isOpenMobile ? 'center' : 'flex-start',
               gap: '0.75rem',
               cursor: 'pointer',
               flex: 1,
               minWidth: 0,
             }}
             onClick={() => handleNavigate(user?.role === 'DRIVER' ? '/vehicles' : '/')}
+            title="VMS Fleet"
           >
             <div
               style={{
@@ -161,7 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Navigation Items */}
         <nav
           style={{
-            padding: '1rem 0.75rem',
+            padding: isCollapsed && !isOpenMobile ? '1rem 0.5rem' : '1rem 0.75rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.375rem',
@@ -177,11 +179,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 key={item.path}
                 type="button"
                 onClick={() => handleNavigate(item.path)}
+                title={isCollapsed && !isOpenMobile ? item.label : undefined}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.625rem 0.875rem',
+                  justifyContent: isCollapsed && !isOpenMobile ? 'center' : 'flex-start',
+                  gap: isCollapsed && !isOpenMobile ? 0 : '0.75rem',
+                  padding: isCollapsed && !isOpenMobile ? '0.625rem 0' : '0.625rem 0.875rem',
                   borderRadius: '10px',
                   color: isActive ? 'var(--accent-blue)' : 'var(--text-muted)',
                   background: isActive ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.12) 100%)' : 'transparent',
@@ -211,7 +215,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* User Card & Collapse Toggle */}
-        <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.75rem', flexShrink: 0, marginTop: 'auto' }}>
+        <div style={{ borderTop: '1px solid var(--border-color)', padding: isCollapsed && !isOpenMobile ? '0.75rem 0.5rem' : '0.75rem', flexShrink: 0, marginTop: 'auto' }}>
           {user && (!isCollapsed || isOpenMobile) && (
             <div
               onClick={() => {
@@ -297,7 +301,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '0.375rem' }}>
+          <div style={{ display: 'flex', flexDirection: isCollapsed && !isOpenMobile ? 'column' : 'row', gap: '0.375rem' }}>
             <button
               onClick={onToggleCollapse}
               className="btn btn-secondary hide-mobile"

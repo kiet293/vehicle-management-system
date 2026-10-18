@@ -8,20 +8,73 @@ import {
   EyeOff, 
   Loader2, 
   AlertCircle, 
-  Shield, 
   UserCheck, 
   Truck, 
   UserPlus, 
   LogIn, 
   CreditCard,
   Sun,
-  Moon
+  Moon,
+  X
 } from 'lucide-react';
 import { Role } from '../../../types';
 
 interface LoginPageProps {
   initialMode?: 'login' | 'register';
 }
+
+const extractErrorMessage = (err: unknown, fallbackMessage: string): string => {
+  if (!err) return fallbackMessage;
+
+  const axiosErr = err as {
+    response?: {
+      status?: number;
+      data?: {
+        message?: string;
+        error?: string;
+        [key: string]: unknown;
+      };
+    };
+    message?: string;
+    code?: string;
+  };
+
+  // Backend returned error message
+  if (axiosErr.response?.data?.message && typeof axiosErr.response.data.message === 'string') {
+    return axiosErr.response.data.message;
+  }
+  if (axiosErr.response?.data?.error && typeof axiosErr.response.data.error === 'string') {
+    return axiosErr.response.data.error;
+  }
+
+  // Network / Connection failure
+  if (axiosErr.code === 'ERR_NETWORK' || (typeof axiosErr.message === 'string' && axiosErr.message.includes('Network Error'))) {
+    return 'Không thể kết nối đến máy chủ backend (Network Error). Vui lòng kiểm tra lại dịch vụ hoặc kết nối mạng.';
+  }
+
+  // HTTP status fallback messages
+  if (axiosErr.response?.status === 401) {
+    return 'Tên đăng nhập hoặc mật khẩu không chính xác. Vui lòng thử lại.';
+  }
+  if (axiosErr.response?.status === 403) {
+    return 'Tài khoản của bạn không có quyền truy cập hoặc đang bị khóa.';
+  }
+  if (axiosErr.response?.status === 404) {
+    return 'Không tìm thấy thông tin tài khoản hoặc dịch vụ không phản hồi.';
+  }
+  if (axiosErr.response?.status === 409) {
+    return 'Dữ liệu đã tồn tại trong hệ thống (tên đăng nhập, email hoặc SĐT trùng lặp).';
+  }
+  if (axiosErr.response?.status === 500) {
+    return 'Đã xảy ra lỗi máy chủ nội bộ (500). Vui lòng thử lại sau.';
+  }
+
+  if (err instanceof Error && err.message && !err.message.startsWith('Request failed with status code')) {
+    return err.message;
+  }
+
+  return fallbackMessage;
+};
 
 export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) => {
   const { login, register, isAuthenticated, user } = useAuth();
@@ -107,7 +160,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
   // Handle Login Submit
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateLogin()) return;
+    if (!validateLogin()) {
+      setErrorMessage('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
+      return;
+    }
 
     setIsLoading(true);
     setErrorMessage(null);
@@ -130,11 +186,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
       }, 500);
     } catch (err: unknown) {
       setIsLoading(false);
-      let msg = 'Tên đăng nhập hoặc mật khẩu không chính xác. Vui lòng thử lại.';
-      if (err instanceof Error) {
-        msg = err.message;
-      }
+      const msg = extractErrorMessage(err, 'Tên đăng nhập hoặc mật khẩu không chính xác. Vui lòng thử lại.');
       setErrorMessage(msg);
+      showToast('error', msg, 4000);
+
+      if (msg.toLowerCase().includes('tên đăng nhập') && !msg.toLowerCase().includes('mật khẩu')) {
+        setUsernameError(msg);
+      } else if (msg.toLowerCase().includes('mật khẩu') && !msg.toLowerCase().includes('tên đăng nhập')) {
+        setPasswordError(msg);
+      }
+
       setPassword('');
       if (passwordInputRef.current) {
         passwordInputRef.current.focus();
@@ -145,7 +206,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
   // Validate Register
   const validateRegister = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!regFullName.trim()) errors.fullName = 'Họ và tên không được để trống';
+    if (!regFullName.trim()) {
+      errors.fullName = 'Họ và tên không được để trống';
+    }
     if (!regUsername.trim()) {
       errors.username = 'Tên đăng nhập không được để trống';
     } else if (regUsername.trim().length < 3) {
@@ -154,18 +217,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
     if (!regEmail.trim()) {
       errors.email = 'Email không được để trống';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) {
-      errors.email = 'Email không đúng định dạng';
+      errors.email = 'Email không đúng định dạng (vd: user@example.com)';
     }
     if (regPhone && !/^0\d{9}$/.test(regPhone.trim())) {
-      errors.phone = 'SĐT phải gồm 10 chữ số (bắt đầu bằng 0)';
+      errors.phone = 'SĐT phải gồm 10 chữ số (bắt đầu bằng số 0)';
     }
     if (!regPassword) {
       errors.password = 'Vui lòng nhập mật khẩu';
     } else if (regPassword.length < 6) {
       errors.password = 'Mật khẩu phải có tối thiểu 6 ký tự';
     }
-    if (regPassword !== regConfirmPassword) {
-      errors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+    if (!regConfirmPassword) {
+      errors.confirmPassword = 'Vui lòng xác nhận lại mật khẩu';
+    } else if (regPassword !== regConfirmPassword) {
+      errors.confirmPassword = 'Mật khẩu xác nhận không khớp với mật khẩu đã nhập';
     }
     if (regRole === 'DRIVER' && !regDriverLicenseClass) {
       errors.driverLicenseClass = 'Vui lòng chọn hạng bằng lái';
@@ -178,7 +243,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
   // Handle Register Submit
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateRegister()) return;
+    if (!validateRegister()) {
+      setErrorMessage('Vui lòng kiểm tra lại các trường thông tin đăng ký bên dưới.');
+      showToast('error', 'Vui lòng điền đầy đủ và chính xác các thông tin đăng ký.', 3500);
+      return;
+    }
 
     setIsLoading(true);
     setErrorMessage(null);
@@ -206,23 +275,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
       }, 500);
     } catch (err: unknown) {
       setIsLoading(false);
-      let msg = 'Đăng ký tài khoản không thành công. Vui lòng thử lại.';
-      if (err instanceof Error) {
-        msg = err.message;
-      }
+      const msg = extractErrorMessage(err, 'Đăng ký tài khoản không thành công. Vui lòng kiểm tra lại thông tin.');
       setErrorMessage(msg);
+      showToast('error', msg, 5000);
+
+      // Link backend error to specific field if relevant
+      const lower = msg.toLowerCase();
+      if (lower.includes('tên đăng nhập')) {
+        setRegErrors(prev => ({ ...prev, username: msg }));
+      } else if (lower.includes('email')) {
+        setRegErrors(prev => ({ ...prev, email: msg }));
+      } else if (lower.includes('số điện thoại') || lower.includes('sđt') || lower.includes('phone')) {
+        setRegErrors(prev => ({ ...prev, phone: msg }));
+      }
     }
   };
-
-  const quickFill = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setUsernameError(null);
-    setPasswordError(null);
-    setErrorMessage(null);
-  };
-
-  const isLoginFormEmpty = !username.trim() && !password.trim();
 
   return (
     <div
@@ -307,6 +374,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
             onClick={() => {
               setAuthMode('login');
               setErrorMessage(null);
+              setRegErrors({});
             }}
             style={{
               padding: '0.625rem',
@@ -332,6 +400,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
             onClick={() => {
               setAuthMode('register');
               setErrorMessage(null);
+              setUsernameError(null);
+              setPasswordError(null);
             }}
             style={{
               padding: '0.625rem',
@@ -354,24 +424,55 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
           </button>
         </div>
 
-        {/* Global Error Banner */}
+        {/* Global Error Banner with Dismiss button */}
         {errorMessage && (
           <div
+            role="alert"
             style={{
-              background: 'rgba(244, 63, 94, 0.15)',
-              border: '1px solid rgba(244, 63, 94, 0.3)',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
               borderRadius: '12px',
               padding: '0.875rem 1rem',
               marginBottom: '1.5rem',
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
               gap: '0.75rem',
-              color: '#fb7185',
-              fontSize: '0.875rem',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.12)',
             }}
           >
-            <AlertCircle size={20} style={{ flexShrink: 0 }} />
-            <span>{errorMessage}</span>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem' }}>
+              <AlertCircle size={20} style={{ flexShrink: 0, marginTop: '2px', color: '#ef4444' }} />
+              <div>
+                <strong style={{ display: 'block', marginBottom: '2px', color: '#f87171', fontWeight: 600 }}>
+                  {authMode === 'login' ? 'Đăng nhập không thành công' : 'Đăng ký không thành công'}
+                </strong>
+                <span style={{ lineHeight: '1.45', color: 'var(--text-main)', fontSize: '0.875rem' }}>
+                  {errorMessage}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setErrorMessage(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#f87171',
+                cursor: 'pointer',
+                padding: '2px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '4px',
+                flexShrink: 0,
+                opacity: 0.8,
+              }}
+              title="Đóng thông báo lỗi"
+              aria-label="Đóng thông báo"
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
 
@@ -391,6 +492,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 onChange={(e) => {
                   setUsername(e.target.value);
                   if (usernameError) setUsernameError(null);
+                  if (errorMessage) setErrorMessage(null);
                 }}
                 onBlur={() => {
                   if (!username.trim()) setUsernameError('Vui lòng nhập tên đăng nhập');
@@ -419,6 +521,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   onChange={(e) => {
                     setPassword(e.target.value);
                     if (passwordError) setPasswordError(null);
+                    if (errorMessage) setErrorMessage(null);
                   }}
                   onBlur={() => {
                     if (!password) setPasswordError('Vui lòng nhập mật khẩu');
@@ -456,7 +559,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
               type="submit"
               className="btn btn-primary"
               style={{ width: '100%', padding: '0.75rem', fontSize: '0.9375rem' }}
-              disabled={isLoading || isLoginFormEmpty}
+              disabled={isLoading}
             >
               {isLoading ? (
                 <>
@@ -476,6 +579,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 onClick={() => {
                   setAuthMode('register');
                   setErrorMessage(null);
+                  setUsernameError(null);
+                  setPasswordError(null);
                 }}
                 style={{
                   background: 'none',
@@ -489,42 +594,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
               >
                 Đăng ký tài khoản ngay
               </button>
-            </div>
-
-            {/* Demo Fast Login Bar */}
-            <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textAlign: 'center', marginBottom: '0.75rem' }}>
-                Tài khoản mẫu dùng thử nhanh:
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => quickFill('admin', 'admin123')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0.5rem 0.25rem' }}
-                >
-                  <Shield size={14} color="var(--accent-purple)" />
-                  <span style={{ fontSize: '0.7rem' }}>Quản trị viên</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => quickFill('manager', 'manager123')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0.5rem 0.25rem' }}
-                >
-                  <UserCheck size={14} color="var(--accent-blue)" />
-                  <span style={{ fontSize: '0.7rem' }}>Điều phối xe</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => quickFill('driver1', 'driver123')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0.5rem 0.25rem' }}
-                >
-                  <Truck size={14} color="var(--accent-amber)" />
-                  <span style={{ fontSize: '0.7rem' }}>Tài xế</span>
-                </button>
-              </div>
             </div>
           </form>
         ) : (
@@ -542,7 +611,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 value={regFullName}
                 onChange={(e) => {
                   setRegFullName(e.target.value);
-                  if (regErrors.fullName) setRegErrors({ ...regErrors, fullName: '' });
+                  if (regErrors.fullName) setRegErrors(prev => ({ ...prev, fullName: '' }));
+                  if (errorMessage) setErrorMessage(null);
                 }}
                 className={`form-input ${regErrors.fullName ? 'input-error' : ''}`}
                 disabled={isLoading}
@@ -563,7 +633,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   value={regUsername}
                   onChange={(e) => {
                     setRegUsername(e.target.value);
-                    if (regErrors.username) setRegErrors({ ...regErrors, username: '' });
+                    if (regErrors.username) setRegErrors(prev => ({ ...prev, username: '' }));
+                    if (errorMessage) setErrorMessage(null);
                   }}
                   className={`form-input ${regErrors.username ? 'input-error' : ''}`}
                   disabled={isLoading}
@@ -583,7 +654,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   value={regPhone}
                   onChange={(e) => {
                     setRegPhone(e.target.value);
-                    if (regErrors.phone) setRegErrors({ ...regErrors, phone: '' });
+                    if (regErrors.phone) setRegErrors(prev => ({ ...prev, phone: '' }));
+                    if (errorMessage) setErrorMessage(null);
                   }}
                   className={`form-input ${regErrors.phone ? 'input-error' : ''}`}
                   disabled={isLoading}
@@ -604,7 +676,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 value={regEmail}
                 onChange={(e) => {
                   setRegEmail(e.target.value);
-                  if (regErrors.email) setRegErrors({ ...regErrors, email: '' });
+                  if (regErrors.email) setRegErrors(prev => ({ ...prev, email: '' }));
+                  if (errorMessage) setErrorMessage(null);
                 }}
                 className={`form-input ${regErrors.email ? 'input-error' : ''}`}
                 disabled={isLoading}
@@ -731,7 +804,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                     value={regPassword}
                     onChange={(e) => {
                       setRegPassword(e.target.value);
-                      if (regErrors.password) setRegErrors({ ...regErrors, password: '' });
+                      if (regErrors.password) setRegErrors(prev => ({ ...prev, password: '' }));
+                      if (errorMessage) setErrorMessage(null);
                     }}
                     className={`form-input ${regErrors.password ? 'input-error' : ''}`}
                     disabled={isLoading}
@@ -769,7 +843,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   value={regConfirmPassword}
                   onChange={(e) => {
                     setRegConfirmPassword(e.target.value);
-                    if (regErrors.confirmPassword) setRegErrors({ ...regErrors, confirmPassword: '' });
+                    if (regErrors.confirmPassword) setRegErrors(prev => ({ ...prev, confirmPassword: '' }));
+                    if (errorMessage) setErrorMessage(null);
                   }}
                   className={`form-input ${regErrors.confirmPassword ? 'input-error' : ''}`}
                   disabled={isLoading}

@@ -71,46 +71,35 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* Top Header & Year Selector */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-            Bảng Điều khiển Phân tích & Thống kê Hạm đội
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '2px 0 0 0' }}>
-            Chỉ số đo lường hiệu suất (KPI), biến động chi phí 12 tháng và cơ cấu tài chính
-          </p>
+      {/* Action Toolbar: Year Selector & Refresh */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem', marginBottom: '-0.5rem' }}>
+        <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '10px' }}>
+          <Calendar size={16} color="var(--accent-blue)" />
+          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+            Năm tài chính:
+          </span>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-main)',
+              fontWeight: 700,
+              fontSize: '0.875rem',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <option value={2026} style={{ background: '#111827' }}>2026</option>
+            <option value={2025} style={{ background: '#111827' }}>2025</option>
+            <option value={2024} style={{ background: '#111827' }}>2024</option>
+          </select>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '10px' }}>
-            <Calendar size={16} color="var(--accent-blue)" />
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-              Năm tài chính:
-            </span>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-main)',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                outline: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              <option value={2026} style={{ background: '#111827' }}>2026</option>
-              <option value={2025} style={{ background: '#111827' }}>2025</option>
-              <option value={2024} style={{ background: '#111827' }}>2024</option>
-            </select>
-          </div>
-
-          <button onClick={fetchDashboardData} className="btn btn-secondary btn-icon" title="Làm mới số liệu">
-            <RotateCcw size={16} />
-          </button>
-        </div>
+        <button onClick={fetchDashboardData} className="btn btn-secondary btn-icon" title="Làm mới số liệu">
+          <RotateCcw size={16} />
+        </button>
       </div>
 
       {/* Error state */}

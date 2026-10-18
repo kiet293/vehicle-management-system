@@ -23,14 +23,62 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     });
   };
 
-  const getPageTitle = (path: string): string => {
-    if (path === '/') return 'Tổng quan Báo cáo & Hiệu suất';
-    if (path.startsWith('/vehicles')) return 'Quản lý Hồ sơ & Đội xe Doanh nghiệp';
-    if (path.startsWith('/costs')) return 'Kê khai & Đối soát Chi phí Vận hành';
-    if (path.startsWith('/users')) return 'Quản lý Nhân sự & Phân quyền Tài xế';
-    if (path.startsWith('/emails')) return 'Nhật ký Cảnh báo & Thông báo Email';
-    if (path.startsWith('/profile')) return 'Hồ sơ cá nhân & Cài đặt tài khoản';
-    return 'Hệ thống Quản lý Đội xe VMS';
+  interface PageInfo {
+    title: string;
+    subtitle: string;
+  }
+
+  const getPageInfo = (path: string): PageInfo => {
+    if (path === '/') {
+      return {
+        title: 'Tổng quan Báo cáo & Hiệu suất',
+        subtitle: 'Chỉ số đo lường hiệu suất (KPI), biến động chi phí 12 tháng và cơ cấu tài chính',
+      };
+    }
+    if (path.startsWith('/vehicles')) {
+      return {
+        title: 'Quản lý Đội xe Doanh nghiệp',
+        subtitle: 'Hồ sơ kỹ thuật, danh mục phương tiện, trạng thái vận hành và bảo dưỡng',
+      };
+    }
+    if (path.startsWith('/costs')) {
+      return {
+        title: 'Kê khai & Chi phí Vận hành',
+        subtitle: 'Theo dõi chi phí nhiên liệu, vé cầu đường, bảo dưỡng định kỳ và đối soát minh bạch',
+      };
+    }
+    if (path.startsWith('/users')) {
+      return {
+        title: 'Quản lý Nhân sự & Phân quyền',
+        subtitle: 'Danh sách cán bộ điều phối, hồ sơ tài xế, bằng lái và phân quyền hệ thống',
+      };
+    }
+    if (path.startsWith('/emails')) {
+      return {
+        title: 'Nhật ký Cảnh báo & Thông báo Email',
+        subtitle: 'Tự động gửi cảnh báo bảo dưỡng, thông báo sự cố và lịch sử gửi thư',
+      };
+    }
+    if (path.startsWith('/profile')) {
+      return {
+        title: 'Hồ sơ Cá nhân & Cài đặt',
+        subtitle: 'Thông tin tài khoản, giấy phép lái xe và cập nhật mật khẩu bảo mật',
+      };
+    }
+    return {
+      title: 'Hệ thống Quản lý Đội xe VMS',
+      subtitle: 'Hệ thống quản lý đội xe phân tán Cloud VMS',
+    };
+  };
+
+  const pageInfo = getPageInfo(currentPath);
+
+  const handleToggleSidebar = () => {
+    if (window.innerWidth <= 768) {
+      setIsOpenMobile((prev) => !prev);
+    } else {
+      toggleCollapse();
+    }
   };
 
   return (
@@ -58,24 +106,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       <div className="vms-content-column">
         <Navbar
-          onToggleMobileMenu={() => setIsOpenMobile((prev) => !prev)}
-          pageTitle={getPageTitle(currentPath)}
+          onToggleSidebar={handleToggleSidebar}
+          isSidebarCollapsed={isCollapsed}
+          pageTitle={pageInfo.title}
+          pageSubtitle={pageInfo.subtitle}
         />
 
         <main className="vms-main-content">
           {children}
         </main>
-
-        <footer className="vms-footer">
-          <div className="vms-footer-content">
-            <div>
-              Vehicle Management System (VMS) • Cloud Computing & Microservices Architecture
-            </div>
-            <div>
-              Spring Boot 3.3.4 • Java 21 • React 18 • MySQL 8.0 • Docker Compose
-            </div>
-          </div>
-        </footer>
       </div>
     </div>
   );

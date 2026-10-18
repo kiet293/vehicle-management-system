@@ -18,14 +18,18 @@ import {
 } from 'lucide-react';
 
 interface NavbarProps {
-  onToggleMobileMenu: () => void;
+  onToggleSidebar: () => void;
   pageTitle?: string;
+  pageSubtitle?: string;
+  isSidebarCollapsed?: boolean;
   onOpenProfile?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  onToggleMobileMenu,
+  onToggleSidebar,
   pageTitle = 'Dashboard',
+  pageSubtitle,
+  isSidebarCollapsed = false,
   onOpenProfile,
 }) => {
   const navigate = useNavigate();
@@ -77,12 +81,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="vms-navbar">
       <div className="vms-navbar-brand-col">
-        {/* Mobile Hamburger */}
+        {/* Toggle Sidebar Button (Desktop collapse & Mobile drawer) */}
         <button
-          onClick={onToggleMobileMenu}
+          type="button"
+          onClick={onToggleSidebar}
           className="btn btn-secondary btn-icon"
           id="hamburger-btn"
-          aria-label="Mở menu"
+          title={isSidebarCollapsed ? 'Mở rộng bảng chức năng' : 'Thu gọn bảng chức năng'}
+          aria-label="Thu gọn hoặc mở rộng bảng chức năng"
         >
           <Menu size={20} />
         </button>
@@ -92,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {pageTitle}
           </h2>
           <span className="navbar-subtitle" style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-            Hệ thống quản lý đội xe phân tán Cloud VMS
+            {pageSubtitle || 'Hệ thống quản lý đội xe phân tán Cloud VMS'}
           </span>
         </div>
       </div>

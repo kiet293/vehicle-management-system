@@ -213,48 +213,20 @@ export const EmailPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Top Banner & Title */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '14px',
-              background: 'rgba(59, 130, 246, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent-blue)',
-            }}
-          >
-            <Bell size={24} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>
-              Dịch Vụ Email &amp; Cảnh Báo Bảo Dưỡng
-            </h2>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0 }}>
-              Backend Email Service (Port 8084) • Tự động gửi cảnh báo &amp; Giám sát hoạt động
-            </p>
-          </div>
-        </div>
+      {/* Top Action Bar */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '-0.5rem' }}>
+        <button
+          onClick={() => handleOpenIncidentModal()}
+          className="btn btn-primary"
+          style={{ fontWeight: 600 }}
+        >
+          <AlertTriangle size={15} />
+          <span>Thông Báo Sự Cố Cho Khách Hàng</span>
+        </button>
 
-        {/* Action Buttons Header */}
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => handleOpenIncidentModal()}
-            className="btn btn-primary"
-            style={{ fontWeight: 600 }}
-          >
-            <AlertTriangle size={15} />
-            <span>Thông Báo Sự Cố Cho Khách Hàng</span>
-          </button>
-
-          <button onClick={fetchLogs} className="btn btn-secondary" title="Làm mới danh sách">
-            <RotateCcw size={14} /> Làm mới
-          </button>
-        </div>
+        <button onClick={fetchLogs} className="btn btn-secondary" title="Làm mới danh sách">
+          <RotateCcw size={14} /> Làm mới
+        </button>
       </div>
 
       {/* Latest Execution Status Feedback Card */}

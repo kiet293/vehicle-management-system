@@ -198,35 +198,10 @@ export const CostPage: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Top Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div
-            style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              background: 'rgba(59, 130, 246, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent-blue)',
-            }}
-          >
-            <Receipt size={22} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: '1.375rem', fontWeight: 700, margin: 0 }}>
-              Kê khai & Quản lý Chi phí Vận hành
-            </h2>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0 }}>
-              Ghi nhận nhiên liệu, vé BOT, bảo dưỡng định kỳ và đối soát minh bạch
-            </p>
-          </div>
-        </div>
-
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '-0.5rem' }}>
         <button onClick={openAddModal} className="btn btn-primary" id="add-cost-btn">
           <Plus size={18} />
-          <span>+ Tạo phiếu chi phí</span>
+          <span>Tạo phiếu chi phí</span>
         </button>
       </div>
 
