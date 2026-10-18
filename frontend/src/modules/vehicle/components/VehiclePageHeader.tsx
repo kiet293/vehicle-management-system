@@ -13,7 +13,7 @@ export const VehiclePageHeader: React.FC<VehiclePageHeaderProps> = ({ canAdd, on
     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '-0.5rem' }}>
       <button onClick={onAdd} className="btn btn-primary" id="add-vehicle-btn">
         <Plus size={18} />
-        <span>+ Thêm xe mới</span>
+        <span>Thêm xe mới</span>
       </button>
     </div>
   );

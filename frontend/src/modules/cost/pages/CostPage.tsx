@@ -201,7 +201,7 @@ export const CostPage: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '-0.5rem' }}>
         <button onClick={openAddModal} className="btn btn-primary" id="add-cost-btn">
           <Plus size={18} />
-          <span>+ Tạo phiếu chi phí</span>
+          <span>Tạo phiếu chi phí</span>
         </button>
       </div>
 
