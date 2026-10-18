@@ -91,12 +91,20 @@ export const VehicleRowActions: React.FC<VehicleRowActionsProps> = ({
             ? { background: '#10b981' }
             : { flex: 1, background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)' }
         }
-        title={compact ? 'Trả xe' : undefined}
+        title={isDriver ? 'Trả xe' : 'Thu hồi xe'}
       >
-        {compact ? 'Trả xe' : (
-          <>
-            <ArrowRight size={14} /> Trả xe / Bàn giao
-          </>
+        {isDriver ? (
+          compact ? 'Trả xe' : (
+            <>
+              <ArrowRight size={14} /> Trả xe / Bàn giao
+            </>
+          )
+        ) : (
+          compact ? 'Thu hồi' : (
+            <>
+              <ArrowRight size={14} /> Thu hồi xe
+            </>
+          )
         )}
       </button>
     )}
