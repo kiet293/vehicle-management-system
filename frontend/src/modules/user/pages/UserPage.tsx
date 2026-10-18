@@ -287,7 +287,7 @@ export const UserPage: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '-0.5rem' }}>
         <button onClick={openAddModal} className="btn btn-primary" id="add-user-btn">
           <UserPlus size={18} />
-          <span>+ Thêm nhân sự mới</span>
+          <span>Thêm nhân sự mới</span>
         </button>
       </div>
 
@@ -447,8 +447,8 @@ export const UserPage: React.FC = () => {
                           isManager && u.role === 'ADMIN'
                             ? 'Điều phối viên không có quyền khóa Admin'
                             : currentUser?.id === u.id
-                            ? 'Không thể tự khóa tài khoản của chính mình'
-                            : u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'
+                              ? 'Không thể tự khóa tài khoản của chính mình'
+                              : u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'
                         }
                       >
                         {u.status === 'ACTIVE' ? <Lock size={16} /> : <Unlock size={16} color="var(--accent-emerald)" />}
