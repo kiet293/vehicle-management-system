@@ -67,8 +67,9 @@ public class CostService {
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Số tiền chi phí phải lớn hơn 0 ₫");
         }
-        LocalDate date = request.getCostDate() != null ? request.getCostDate() : LocalDate.now();
-        if (date.isAfter(LocalDate.now())) {
+        LocalDate todayVietnam = LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        LocalDate date = request.getCostDate() != null ? request.getCostDate() : todayVietnam;
+        if (date.isAfter(todayVietnam)) {
             throw new BadRequestException("Ngày chi phí không được vượt quá ngày hiện tại");
         }
 
@@ -118,7 +119,8 @@ public class CostService {
             cost.setAmount(request.getAmount());
         }
         if (request.getCostDate() != null) {
-            if (request.getCostDate().isAfter(LocalDate.now())) {
+            LocalDate todayVietnam = LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+            if (request.getCostDate().isAfter(todayVietnam)) {
                 throw new BadRequestException("Ngày chi phí không được vượt quá ngày hiện tại");
             }
             cost.setCostDate(request.getCostDate());
