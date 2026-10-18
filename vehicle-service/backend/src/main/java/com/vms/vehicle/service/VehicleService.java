@@ -29,8 +29,8 @@ public class VehicleService {
     private final VehicleTripRepository vehicleTripRepository;
     private final EmailClient emailClient;
 
-    public List<VehicleDTO> getAllVehicles(VehicleStatus status, String brand, String search) {
-        return vehicleRepository.findAll(VehicleSpecifications.filterBy(status, brand, search)).stream()
+    public List<VehicleDTO> getAllVehicles(VehicleStatus status, String brand, String search, Long assignedDriverId) {
+        return vehicleRepository.findAll(VehicleSpecifications.filterBy(status, brand, search, assignedDriverId)).stream()
                 .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
                 .map(VehicleDTO::fromEntity)
                 .collect(Collectors.toList());

@@ -24,9 +24,14 @@ export interface UpdateVehicleData {
 }
 
 export const vehicleService = {
-  getVehicles: async (status?: VehicleStatus, brand?: string, search?: string): Promise<Vehicle[]> => {
+  getVehicles: async (
+    status?: VehicleStatus,
+    brand?: string,
+    search?: string,
+    assignedDriverId?: number
+  ): Promise<Vehicle[]> => {
     const res = await apiClient.get<ApiResponse<Vehicle[]>>('/api/vehicles', {
-      params: { status, brand, search },
+      params: { status, brand, search, assignedDriverId },
     });
     return res.data.data || [];
   },

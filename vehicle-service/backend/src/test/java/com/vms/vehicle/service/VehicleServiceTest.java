@@ -746,7 +746,7 @@ class VehicleServiceTest {
         void usesSpecification() {
             when(vehicleRepository.findAll(any(Specification.class))).thenReturn(List.of(buildVehicle()));
 
-            vehicleService.getAllVehicles(VehicleStatus.AVAILABLE, "Toyota", "29A");
+            vehicleService.getAllVehicles(VehicleStatus.AVAILABLE, "Toyota", "29A", null);
 
             verify(vehicleRepository).findAll(any(Specification.class));
         }
@@ -761,7 +761,7 @@ class VehicleServiceTest {
             v3.setId(3L);
             when(vehicleRepository.findAll(any(Specification.class))).thenReturn(List.of(v1, v2, v3));
 
-            List<VehicleDTO> result = vehicleService.getAllVehicles(null, null, null);
+            List<VehicleDTO> result = vehicleService.getAllVehicles(null, null, null, null);
 
             assertThat(result).extracting(VehicleDTO::getId).containsExactly(3L, 2L, 1L);
         }
@@ -774,7 +774,7 @@ class VehicleServiceTest {
             Vehicle notDue = buildVehicle(VehicleStatus.AVAILABLE, 14999, 10000);
             when(vehicleRepository.findAll(any(Specification.class))).thenReturn(List.of(due, notDue));
 
-            List<VehicleDTO> result = vehicleService.getAllVehicles(null, null, null);
+            List<VehicleDTO> result = vehicleService.getAllVehicles(null, null, null, null);
 
             // Sorted by id descending: due (id 2) first, then notDue (id 1)
             assertThat(result).extracting(VehicleDTO::isMaintenanceDue).containsExactly(true, false);
@@ -785,7 +785,7 @@ class VehicleServiceTest {
         void returnsEmptyList() {
             when(vehicleRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
-            assertThat(vehicleService.getAllVehicles(VehicleStatus.IN_USE, "Ferrari", "zzz")).isEmpty();
+            assertThat(vehicleService.getAllVehicles(VehicleStatus.IN_USE, "Ferrari", "zzz", null)).isEmpty();
         }
     }
 

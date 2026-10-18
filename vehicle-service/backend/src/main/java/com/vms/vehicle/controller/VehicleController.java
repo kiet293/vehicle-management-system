@@ -23,8 +23,9 @@ public class VehicleController {
     public ResponseEntity<ApiResponse<List<VehicleDTO>>> getAllVehicles(
             @RequestParam(required = false) VehicleStatus status,
             @RequestParam(required = false) String brand,
-            @RequestParam(required = false) String search) {
-        List<VehicleDTO> list = vehicleService.getAllVehicles(status, brand, search);
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long assignedDriverId) {
+        List<VehicleDTO> list = vehicleService.getAllVehicles(status, brand, search, assignedDriverId);
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 

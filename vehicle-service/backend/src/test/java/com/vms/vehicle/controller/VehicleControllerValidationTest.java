@@ -304,7 +304,7 @@ class VehicleControllerValidationTest {
         @Test
         @DisplayName("supports the v1 path alias and query filters")
         void supportsV1AliasAndFilters() throws Exception {
-            when(vehicleService.getAllVehicles(any(), any(), any())).thenReturn(List.of());
+            when(vehicleService.getAllVehicles(any(), any(), any(), any())).thenReturn(List.of());
 
             mockMvc.perform(get("/api/v1/vehicles")
                             .param("status", "AVAILABLE")
@@ -343,7 +343,7 @@ class VehicleControllerValidationTest {
         @Test
         @DisplayName("returns 400 for an unknown vehicle type in the query string")
         void unknownVehicleTypeFilterIsIgnored() throws Exception {
-            when(vehicleService.getAllVehicles(any(), any(), any())).thenReturn(List.of());
+            when(vehicleService.getAllVehicles(any(), any(), any(), any())).thenReturn(List.of());
 
             mockMvc.perform(get("/api/vehicles").param("brand", "Toyota"))
                     .andExpect(status().isOk());
