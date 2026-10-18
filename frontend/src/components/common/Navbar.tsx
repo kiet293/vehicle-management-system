@@ -20,6 +20,7 @@ import {
 interface NavbarProps {
   onToggleSidebar: () => void;
   pageTitle?: string;
+  pageSubtitle?: string;
   isSidebarCollapsed?: boolean;
   onOpenProfile?: () => void;
 }
@@ -27,6 +28,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
   pageTitle = 'Dashboard',
+  pageSubtitle,
   isSidebarCollapsed = false,
   onOpenProfile,
 }) => {
@@ -96,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {pageTitle}
           </h2>
           <span className="navbar-subtitle" style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-            Hệ thống quản lý đội xe phân tán Cloud VMS
+            {pageSubtitle || 'Hệ thống quản lý đội xe phân tán Cloud VMS'}
           </span>
         </div>
       </div>
