@@ -1221,6 +1221,7 @@ refactor(vehicle): extract vehicle page into reusable components
 | 2026-10-05 | #8 Trip log | (xem git log) | ✅ xong | Bảng `vehicle_trips` 15 cột; assign→IN_PROGRESS, return→COMPLETED (+distanceKm, notes), soft-delete→CANCELLED; 2 endpoint; modal lịch sử; **126 test** |
 | 2026-10-05 | #6 Tách components | refactor(vehicle) | ✅ xong | `VehiclePage` 1240 → **146 dòng**; 12 component + 2 hook + `utils/vehicleFormat.ts`; xóa `.gitkeep`; `tsc` exit 0, `npm run build` OK. Còn: verify UI/lucồng bằng tay |
 | 2026-10-18 | Bổ sung sau merge `dev` | feat(vehicle) | ✅ xong | Lọc xe theo tài xế (`assignedDriverId` ở backend) + nút "Thu hồi xe" cho admin/manager; **127 test**; `tsc` exit 0, `npm run build` OK |
+| 2026-10-18 | Cost: tài xế chỉ thấy chi phí xe được giao | `72477da` | ✅ xong | `CostPage` lọc theo `assignedDriverId` lấy từ vehicle-service; `tsc` exit 0; chờ test tay |
 
 ---
 
@@ -1294,7 +1295,40 @@ Yêu cầu nhóm thống nhất sau khi merge `dev`: (1) tài xế nào chỉ th
 - [x] `docker run ... mvn test` → **Tests run: 127, Failures: 0, Errors: 0 — BUILD SUCCESS**
 - [x] `npx tsc --noEmit` → exit 0
 - [x] `npm run build` → OK
-- [ ] Test tay: đăng nhập `driver1/driver123` chỉ thấy xe được bàn giao; `admin/admin123` thấy nút "Thu hồi xe" ở xe `IN_USE`
+- [x] Test tay: đăng nhập `driver1/driver123` chỉ thấy xe được bàn giao; `admin/admin123` thấy nút "Thu hồi xe" ở xe `IN_USE` (user xác nhận OK)
+
+---
+
+## 12. BỔ SUNG (2026-10-18) — TÀI XẾ CHỈ THẤY CHI PHÍ CỦA XE ĐƯỢC GIAO (module Cost)
+
+Yêu cầu: ở giao diện **Chi phí vận hành** của tài khoản tài xế, chỉ hiển thị chi phí của xe đang được bàn giao cho mình, thay vì hiện toàn bộ như trước.
+
+### 12.1 Vấn đề của cách cũ
+
+`CostPage` lọc theo `driverId` (chi phí do chính tài xế kê khai). Với seed hiện tại, `driver1` (id 3) vẫn thấy chi phí của **nhiều xe** (1, 2, 5) — không đúng phạm vi "xe được giao".
+
+### 12.2 Quyết định thiết kế
+
+| Điểm | Chốt |
+|---|---|
+| Lọc theo cái gì | Theo **xe đang được bàn giao** (`assignedDriverId`), không theo người kê khai |
+| Nguồn dữ liệu | Cost service **không biết** phân công xe (DB riêng) → gọi vehicle-service `getVehicles(..., assignedDriverId=user.id)` để lấy danh sách xe của tài xế, rồi lọc danh sách chi phí theo tập `vehicleId` đó |
+| Phạm vi sửa | **Chỉ frontend** `CostPage.tsx` (cost-service backend không đổi vì gateway không truyền danh tính user → không ép được ở server) |
+| Áp dụng cho | Cả bảng chi phí, dropdown lọc xe, và dropdown phương tiện trong modal "Tạo phiếu chi phí" |
+
+### 12.3 Thay đổi (đã làm)
+
+- Thêm state `myVehicleIds`; `fetchVehicles()` gọi `vehicleService.getVehicles(undefined, undefined, undefined, isDriver ? user.id : undefined)` và lưu id các xe được giao.
+- `fetchCosts()`: bỏ tham số `driverId`; với tài xế lọc `data.filter(c => myVehicleIds.includes(c.vehicleId))`.
+- Thêm `myVehicleIds` vào dependency của `useEffect` fetch chi phí.
+- Nhãn option "Tất cả phương tiện" → "Tất cả xe được giao" khi là tài xế.
+
+### 12.4 Tiêu chí nghiệm thu
+
+- [x] `npx tsc --noEmit` → exit 0
+- [x] `npm run build` → OK
+- [x] API verify: 8 phiếu tổng; xe `30H-123.45` (id 2) có đúng 2 phiếu → `driver1` thấy 2
+- [ ] Test tay: `driver1/driver123` → Chi phí vận hành chỉ hiện 2 phiếu của `30H-123.45`; `admin/admin123` → đủ 8 phiếu
 
 ---
 
