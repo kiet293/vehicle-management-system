@@ -284,32 +284,7 @@ export const UserPage: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Top Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div
-            style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              background: 'rgba(59, 130, 246, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent-blue)',
-            }}
-          >
-            <Users size={22} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: '1.375rem', fontWeight: 700, margin: 0 }}>
-              Danh sách Nhân sự & Phân quyền
-            </h2>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0 }}>
-              Quản lý tài khoản cán bộ điều phối, tài xế và trạng thái truy cập
-            </p>
-          </div>
-        </div>
-
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '-0.5rem' }}>
         <button onClick={openAddModal} className="btn btn-primary" id="add-user-btn">
           <UserPlus size={18} />
           <span>+ Thêm nhân sự mới</span>
