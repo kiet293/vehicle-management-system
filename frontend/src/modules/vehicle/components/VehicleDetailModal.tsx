@@ -37,7 +37,6 @@ interface VehicleDetailModalProps {
   onReturn: (v: Vehicle) => void;
   onFinishMaintenance: (v: Vehicle) => void;
   onViewTrips: (v: Vehicle) => void;
-  onSendIncidentEmail?: (v: Vehicle) => void;
 }
 
 const VEHICLE_TYPE_MAP: Record<string, string> = {
@@ -60,7 +59,6 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
   onReturn,
   onFinishMaintenance,
   onViewTrips,
-  onSendIncidentEmail,
 }) => {
   const { showToast } = useToast();
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -140,32 +138,6 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                 </div>
               </div>
             </div>
-
-            {onSendIncidentEmail && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onSendIncidentEmail(vehicle);
-                }}
-                className="btn btn-sm"
-                style={{
-                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)',
-                  cursor: 'pointer',
-                }}
-              >
-                <Mail size={15} /> Gửi mail thông báo sự cố cho chủ xe
-              </button>
-            )}
           </div>
         )}
 

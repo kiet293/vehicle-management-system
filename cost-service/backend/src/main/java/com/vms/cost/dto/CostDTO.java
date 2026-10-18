@@ -21,6 +21,7 @@ public class CostDTO {
     private String vehiclePlate;
     private Long driverId;
     private String driverName;
+    private String driverEmail;
     private CostType costType;
     private BigDecimal amount;
     private Integer odometerAtCost;
@@ -38,6 +39,7 @@ public class CostDTO {
                 .vehiclePlate(cost.getVehiclePlate())
                 .driverId(cost.getDriverId())
                 .driverName(cost.getDriverName())
+                .driverEmail(cost.getDriverEmail())
                 .costType(cost.getCostType())
                 .amount(cost.getAmount())
                 .odometerAtCost(cost.getOdometerAtCost())

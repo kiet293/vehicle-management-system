@@ -129,9 +129,16 @@ public class EmailService {
     }
 
     /**
-     * Gửi email với Tên người gửi là Tên Sản Phẩm và Người nhận được phân giải tự động
+     * Gửi email với Tên người gửi mặc định là Tên Sản Phẩm và Người nhận được phân giải tự động
      */
     public EmailLog sendEmail(String to, String subject, String content, EmailType type) {
+        return sendEmail(to, null, null, subject, content, type);
+    }
+
+    /**
+     * Gửi email hỗ trợ định danh Người gửi (như tài xế) và Người nhận (Quản lý)
+     */
+    public EmailLog sendEmail(String to, String from, String senderName, String subject, String content, EmailType type) {
         String logId = UUID.randomUUID().toString();
         EmailStatus status = EmailStatus.SENT;
         String errorMsg = null;
@@ -143,14 +150,23 @@ public class EmailService {
         String emailContent = (content != null) ? content : "";
         EmailType emailType = (type != null) ? type : EmailType.MANUAL;
 
-        // Gửi qua SMTP với MimeMessageHelper để Tên người gửi là Tên Sản Phẩm
+        String senderDisplayName = (senderName != null && !senderName.trim().isEmpty())
+                ? (from != null && !from.trim().isEmpty() ? senderName.trim() + " (" + from.trim() + ")" : senderName.trim())
+                : (from != null && !from.trim().isEmpty() ? from.trim() : productName);
+
+        // Gửi qua SMTP với MimeMessageHelper
         if (mailSender != null && !fromEmail.contains("placeholder") && !fromEmail.contains("example.com")) {
             try {
                 MimeMessage mimeMessage = mailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-                // Hiển thị Tên người gửi là Tên Sản Phẩm thay vì tên cá nhân
-                helper.setFrom(new InternetAddress(fromEmail, productName, "UTF-8"));
+                // Nếu có email người gửi (tài xế), thiết lập personal name và reply-to tương ứng
+                if (from != null && !from.trim().isEmpty()) {
+                    helper.setFrom(new InternetAddress(fromEmail, senderDisplayName, "UTF-8"));
+                    helper.setReplyTo(new InternetAddress(from.trim(), senderName != null ? senderName.trim() : from.trim(), "UTF-8"));
+                } else {
+                    helper.setFrom(new InternetAddress(fromEmail, productName, "UTF-8"));
+                }
                 helper.setTo(recipient);
                 helper.setSubject(emailSubject);
 
@@ -159,7 +175,8 @@ public class EmailService {
                 helper.setText(emailContent, htmlContent);
 
                 mailSender.send(mimeMessage);
-                log.info("Sent email successfully from '{}' to '{}' with subject: {}", productName, recipient, emailSubject);
+                log.info("Sent email successfully from '{}' (fromEmail: {}) to '{}' with subject: {}",
+                        senderDisplayName, fromEmail, recipient, emailSubject);
             } catch (Exception ex) {
                 log.warn("SMTP send failed ({}), recorded as FAILED.", ex.getMessage());
                 status = EmailStatus.FAILED;
@@ -167,12 +184,13 @@ public class EmailService {
             }
         } else {
             log.info("Simulating email send (Stateless Mock): From: '{}', To: '{}', Subject: '{}'",
-                    productName, recipient, emailSubject);
+                    senderDisplayName, recipient, emailSubject);
             status = EmailStatus.MOCK_SENT;
         }
 
         EmailLog logEntry = EmailLog.builder()
                 .id(logId)
+                .sender(senderDisplayName)
                 .recipient(recipient)
                 .subject(emailSubject)
                 .content(emailContent)
@@ -238,33 +256,49 @@ public class EmailService {
     }
 
     /**
-     * Tự động gửi cảnh báo chi phí lớn phát sinh đến người dùng quản lý
+     * Tự động gửi cảnh báo chi phí lớn phát sinh từ tài xế đến người dùng quản lý
      */
     public EmailLog sendHighCostAlert(HighCostAlertRequest request) {
-        String recipient = resolveRecipient(request.getRecipientEmail());
+        String targetRecipient = (request.getRecipientEmail() != null && !request.getRecipientEmail().trim().isEmpty())
+                ? request.getRecipientEmail().trim()
+                : "nhuttd0105@gmail.com";
+        String recipient = resolveRecipient(targetRecipient);
+
+        String driverEmail = (request.getDriverEmail() != null && !request.getDriverEmail().trim().isEmpty())
+                ? request.getDriverEmail().trim()
+                : "driver.an@vms.com";
+        String driverName = (request.getDriverName() != null && !request.getDriverName().trim().isEmpty())
+                ? request.getDriverName().trim()
+                : "Tài xế phụ trách xe";
+
         NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("vi-VN"));
         String formattedAmount = request.getAmount() != null ? currencyFormat.format(request.getAmount()) : "0 ₫";
 
-        String subject = "[" + productName + " CẢNH BÁO] Phát sinh phiếu chi lớn cho xe " + request.getLicensePlate();
+        String subject = "[" + productName + " CẢNH BÁO] Phát sinh phiếu chi lớn (> 5tr) cho xe " + request.getLicensePlate();
         String content = String.format(
-                "Kính gửi Quản lý Đội xe,\n\n" +
-                "Hệ thống vừa ghi nhận một khoản chi phí vượt ngưỡng định mức cảnh báo (> 5.000.000 ₫):\n\n" +
+                "Kính gửi Quản lý Đội xe (Email tiếp nhận: %s),\n\n" +
+                "Hệ thống vừa ghi nhận một khoản chi phí vượt ngưỡng định mức cảnh báo (> 5.000.000 ₫) do Tài xế kê khai gửi tới Quản lý:\n\n" +
                 " - Biển số xe: %s\n" +
                 " - Loại chi phí: %s\n" +
                 " - Số tiền: %s\n" +
-                " - Người kê khai: %s\n" +
+                " - Tài xế kê khai (Người gửi): %s <%s>\n" +
+                " - Quản lý tiếp nhận (Người nhận): %s\n" +
                 " - Nội dung: %s\n\n" +
                 "Vui lòng truy cập hệ thống để kiểm tra hóa đơn và phê duyệt phiếu chi.\n\n" +
-                "Trân trọng,\nPhòng Quản trị Chi phí - %s",
+                "Trân trọng,\n%s - %s",
+                targetRecipient,
                 request.getLicensePlate(),
                 request.getCostType(),
                 formattedAmount,
-                request.getDriverName(),
-                request.getDescription(),
+                driverName,
+                driverEmail,
+                targetRecipient,
+                request.getDescription() != null ? request.getDescription() : "(Không có ghi chú)",
+                driverName,
                 productName
         );
 
-        return sendEmail(recipient, subject, content, EmailType.HIGH_COST_ALERT);
+        return sendEmail(recipient, driverEmail, driverName, subject, content, EmailType.HIGH_COST_ALERT);
     }
 
     /**

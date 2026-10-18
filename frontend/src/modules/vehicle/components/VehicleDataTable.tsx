@@ -17,7 +17,6 @@ interface VehicleDataTableProps {
   onDelete: (v: Vehicle) => void;
   onViewTrips: (v: Vehicle) => void;
   onChangeStatus: (v: Vehicle, status: VehicleStatus) => void;
-  onSendIncidentEmail?: (v: Vehicle) => void;
 }
 
 export const VehicleDataTable: React.FC<VehicleDataTableProps> = ({
@@ -32,7 +31,6 @@ export const VehicleDataTable: React.FC<VehicleDataTableProps> = ({
   onDelete,
   onViewTrips,
   onChangeStatus,
-  onSendIncidentEmail,
 }) => (
   <div className="data-table-container">
     <table className="data-table">
@@ -154,7 +152,6 @@ export const VehicleDataTable: React.FC<VehicleDataTableProps> = ({
                     onEdit={onEdit}
                     onDelete={onDelete}
                     onViewTrips={onViewTrips}
-                    onSendIncidentEmail={onSendIncidentEmail}
                   />
                 </div>
               </td>
