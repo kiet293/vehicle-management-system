@@ -200,67 +200,6 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="vms-page-container" style={{ maxWidth: '1280px', margin: '0 auto', paddingBottom: '3rem' }}>
-      {/* Header Banner */}
-      <div
-        style={{
-          background: 'var(--bg-card)',
-          borderRadius: '16px',
-          border: '1px solid var(--border-color)',
-          padding: '1.75rem 2rem',
-          marginBottom: '1.5rem',
-          position: 'relative',
-          overflow: 'hidden',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '280px',
-            height: '100%',
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.12))',
-            pointerEvents: 'none',
-            clipPath: 'polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%)',
-          }}
-        />
-
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--accent-blue)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Tài khoản cá nhân
-            </span>
-            <span style={{ color: 'var(--text-dim)' }}>•</span>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-dim)' }}>
-              Cập nhật lần cuối: Hôm nay
-            </span>
-          </div>
-          <h1 style={{ fontSize: '1.625rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
-            Hồ sơ cá nhân & Cài đặt tài khoản
-          </h1>
-          <p style={{ margin: '0.35rem 0 0', color: 'var(--text-dim)', fontSize: '0.875rem' }}>
-            Quản lý thông tin định danh, tùy chỉnh hồ sơ liên lạc và nâng cao bảo mật tài khoản
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative', zIndex: 1 }}>
-          <button
-            onClick={() => refreshUser()}
-            className="btn btn-secondary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}
-            title="Đồng bộ lại thông tin từ hệ thống"
-          >
-            <RefreshCw size={15} /> Làm mới
-          </button>
-        </div>
-      </div>
-
       {/* Main 2-Column Grid */}
       <div
         style={{
@@ -451,74 +390,94 @@ export const ProfilePage: React.FC = () => {
           <div
             style={{
               display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               borderBottom: '1px solid var(--border-color)',
               background: 'rgba(0, 0, 0, 0.02)',
               padding: '0.5rem 1rem 0',
-              gap: '0.5rem',
-              overflowX: 'auto',
+              gap: '0.75rem',
             }}
           >
-            <button
-              onClick={() => setActiveTab('info')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.875rem 1.25rem',
-                fontSize: '0.875rem',
-                fontWeight: activeTab === 'info' ? 700 : 500,
-                color: activeTab === 'info' ? 'var(--accent-blue)' : 'var(--text-dim)',
-                background: 'transparent',
-                border: 'none',
-                borderBottom: activeTab === 'info' ? '2.5px solid var(--accent-blue)' : '2.5px solid transparent',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <User size={16} /> Thông tin cá nhân
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', flex: 1 }}>
+              <button
+                onClick={() => setActiveTab('info')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.875rem 1.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: activeTab === 'info' ? 700 : 500,
+                  color: activeTab === 'info' ? 'var(--accent-blue)' : 'var(--text-dim)',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === 'info' ? '2.5px solid var(--accent-blue)' : '2.5px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <User size={16} /> Thông tin cá nhân
+              </button>
+
+              <button
+                onClick={() => setActiveTab('security')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.875rem 1.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: activeTab === 'security' ? 700 : 500,
+                  color: activeTab === 'security' ? 'var(--accent-blue)' : 'var(--text-dim)',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === 'security' ? '2.5px solid var(--accent-blue)' : '2.5px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <Key size={16} /> Đổi mật khẩu
+              </button>
+
+              <button
+                onClick={() => setActiveTab('vehicles')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.875rem 1.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: activeTab === 'vehicles' ? 700 : 500,
+                  color: activeTab === 'vehicles' ? 'var(--accent-blue)' : 'var(--text-dim)',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === 'vehicles' ? '2.5px solid var(--accent-blue)' : '2.5px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <Car size={16} /> {user.role === 'DRIVER' ? 'Phương tiện phụ trách' : 'Tổng quan quyền hạn'}
+              </button>
+            </div>
 
             <button
-              onClick={() => setActiveTab('security')}
+              onClick={() => refreshUser()}
+              className="btn btn-secondary btn-sm"
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.875rem 1.25rem',
-                fontSize: '0.875rem',
-                fontWeight: activeTab === 'security' ? 700 : 500,
-                color: activeTab === 'security' ? 'var(--accent-blue)' : 'var(--text-dim)',
-                background: 'transparent',
-                border: 'none',
-                borderBottom: activeTab === 'security' ? '2.5px solid var(--accent-blue)' : '2.5px solid transparent',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                whiteSpace: 'nowrap',
+                gap: '0.4rem',
+                fontSize: '0.8125rem',
+                padding: '0.4rem 0.85rem',
+                marginBottom: '0.5rem',
+                flexShrink: 0,
               }}
+              title="Đồng bộ lại thông tin từ hệ thống"
             >
-              <Key size={16} /> Đổi mật khẩu
-            </button>
-
-            <button
-              onClick={() => setActiveTab('vehicles')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.875rem 1.25rem',
-                fontSize: '0.875rem',
-                fontWeight: activeTab === 'vehicles' ? 700 : 500,
-                color: activeTab === 'vehicles' ? 'var(--accent-blue)' : 'var(--text-dim)',
-                background: 'transparent',
-                border: 'none',
-                borderBottom: activeTab === 'vehicles' ? '2.5px solid var(--accent-blue)' : '2.5px solid transparent',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <Car size={16} /> {user.role === 'DRIVER' ? 'Phương tiện phụ trách' : 'Tổng quan quyền hạn'}
+              <RefreshCw size={14} /> Làm mới
             </button>
           </div>
 
