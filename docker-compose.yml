@@ -202,7 +202,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL-http://localhost:8080}
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
