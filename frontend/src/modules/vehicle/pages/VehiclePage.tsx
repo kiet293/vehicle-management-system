@@ -45,7 +45,7 @@ export const VehiclePage: React.FC = () => {
     clearFilters,
     hasActiveFilter,
     loadBrands,
-  } = useVehicleFleet();
+  } = useVehicleFleet(isDriver ? user?.id : undefined);
 
   const loadDriversMap = useCallback(async () => {
     try {

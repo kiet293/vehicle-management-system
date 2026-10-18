@@ -631,7 +631,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                     className="btn btn-primary btn-sm"
                     style={{ flex: 1, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                   >
-                    <ArrowRight size={14} /> Bàn giao lại / Trả xe
+                    <ArrowRight size={14} /> Thu hồi xe
                   </button>
                 )}
                 {vehicle.status === 'MAINTENANCE' && (

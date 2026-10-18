@@ -305,6 +305,40 @@ class VehicleApiIntegrationTest {
         }
 
         @Test
+        @DisplayName("filters by the assigned driver so a driver only sees their own vehicles")
+        void filtersByAssignedDriver() throws Exception {
+            Long mine = createVehicle("29A-888.88", "Toyota", "Camry", 15000);
+            Long other = createVehicle("30H-123.45", "Ford", "Ranger", 15000);
+            createVehicle("29B-456.78", "Ford", "Transit", 15000);
+
+            mockMvc.perform(post("/api/vehicles/{id}/assign", mine)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"driverId\": 9, \"driverName\": \"Nguyen Van An\"}"))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(post("/api/vehicles/{id}/assign", other)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"driverId\": 10, \"driverName\": \"Tran Thi B\"}"))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/api/vehicles").param("assignedDriverId", "9"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.data[0].id").value(mine))
+                    .andExpect(jsonPath("$.data[0].assignedDriverId").value(9));
+
+            mockMvc.perform(get("/api/vehicles").param("assignedDriverId", "99"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(0));
+
+            mockMvc.perform(get("/api/vehicles")
+                            .param("assignedDriverId", "9")
+                            .param("status", "AVAILABLE"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(0));
+        }
+
+        @Test
         @DisplayName("lists distinct brands sorted alphabetically")
         void listsDistinctBrands() throws Exception {
             createVehicle("29A-888.88", "Toyota", "Camry", 15000);
