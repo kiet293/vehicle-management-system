@@ -77,6 +77,7 @@ public class CostService {
                 .vehiclePlate(request.getVehiclePlate() != null ? request.getVehiclePlate() : "N/A")
                 .driverId(request.getDriverId())
                 .driverName(request.getDriverName())
+                .driverEmail(request.getDriverEmail())
                 .costType(request.getCostType())
                 .amount(request.getAmount())
                 .odometerAtCost(request.getOdometerAtCost())
@@ -94,6 +95,7 @@ public class CostService {
                     saved.getCostType().name(),
                     saved.getAmount(),
                     saved.getDriverName(),
+                    saved.getDriverEmail(),
                     saved.getDescription()
             );
         }

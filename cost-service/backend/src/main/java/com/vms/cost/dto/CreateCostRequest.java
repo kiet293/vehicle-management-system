@@ -18,6 +18,7 @@ public class CreateCostRequest {
     private String vehiclePlate;
     private Long driverId;
     private String driverName;
+    private String driverEmail;
     private CostType costType;
     private BigDecimal amount;
     private Integer odometerAtCost;

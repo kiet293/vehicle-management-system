@@ -18,15 +18,12 @@ import { ReturnVehicleModal } from '../components/ReturnVehicleModal';
 import { DeleteVehicleModal } from '../components/DeleteVehicleModal';
 import { VehicleTripHistoryModal } from '../components/VehicleTripHistoryModal';
 import { VehicleDetailModal } from '../components/VehicleDetailModal';
-import { VehicleIncidentModal } from '../../email/components/VehicleIncidentModal';
 
 export const VehiclePage: React.FC = () => {
   const { user } = useAuth();
   const isDriver = user?.role === 'DRIVER';
 
   const [driversMap, setDriversMap] = useState<Record<number, User>>({});
-  const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
-  const [incidentVehicle, setIncidentVehicle] = useState<Vehicle | null>(null);
 
   const {
     vehicles,
@@ -74,11 +71,6 @@ export const VehiclePage: React.FC = () => {
 
   const actions = useVehicleActions(refreshAll);
 
-  const handleOpenIncidentEmail = useCallback((v: Vehicle) => {
-    setIncidentVehicle(v);
-    setIsIncidentModalOpen(true);
-  }, []);
-
   const rowActionProps = {
     isDriver,
     driversMap,
@@ -90,7 +82,6 @@ export const VehiclePage: React.FC = () => {
     onDelete: actions.requestDelete,
     onViewTrips: actions.openTripHistoryModal,
     onChangeStatus: actions.handleChangeStatus,
-    onSendIncidentEmail: handleOpenIncidentEmail,
   };
 
   return (
@@ -203,20 +194,6 @@ export const VehiclePage: React.FC = () => {
         />
       )}
 
-      <VehicleIncidentModal
-        isOpen={isIncidentModalOpen}
-        onClose={() => {
-          setIsIncidentModalOpen(false);
-          setIncidentVehicle(null);
-        }}
-        onSuccess={() => {
-          refreshAll();
-        }}
-        vehicles={vehicles}
-        initialVehicle={incidentVehicle}
-        driversMap={driversMap}
-      />
-
       <VehicleDetailModal
         isOpen={actions.isDetailModalOpen}
         onClose={actions.closeDetailModal}
@@ -233,7 +210,6 @@ export const VehiclePage: React.FC = () => {
         onReturn={actions.openReturnModal}
         onFinishMaintenance={actions.handleFinishMaintenance}
         onViewTrips={actions.openTripHistoryModal}
-        onSendIncidentEmail={handleOpenIncidentEmail}
       />
     </div>
   );

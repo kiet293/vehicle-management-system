@@ -69,6 +69,7 @@ export interface Cost {
   vehiclePlate: string;
   driverId?: number;
   driverName?: string;
+  driverEmail?: string;
   costType: CostType;
   amount: number;
   odometerAtCost?: number;
@@ -93,6 +94,7 @@ export type EmailStatus = 'SENT' | 'MOCK_SENT' | 'FAILED';
 
 export interface EmailLog {
   id: string;
+  sender?: string;
   recipient: string;
   subject: string;
   content: string;

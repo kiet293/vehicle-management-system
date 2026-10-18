@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class EmailLog {
     private String id;
+    private String sender;
     private String recipient;
     private String subject;
     private String content;

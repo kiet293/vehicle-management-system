@@ -6,6 +6,7 @@ export interface CreateCostData {
   vehiclePlate: string;
   driverId?: number;
   driverName?: string;
+  driverEmail?: string;
   costType: CostType;
   amount: number;
   odometerAtCost?: number;

@@ -16,6 +16,7 @@ public class HighCostAlertRequest {
     private String costType;
     private BigDecimal amount;
     private String driverName;
+    private String driverEmail;
     private String description;
     private String recipientEmail;
 }
