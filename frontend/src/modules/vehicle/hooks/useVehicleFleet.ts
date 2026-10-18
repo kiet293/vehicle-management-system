@@ -4,7 +4,7 @@ import { Vehicle, VehicleStatus } from '../../../types';
 
 const STATUSES_FROM_URL: VehicleStatus[] = ['AVAILABLE', 'IN_USE', 'MAINTENANCE'];
 
-export const useVehicleFleet = () => {
+export const useVehicleFleet = (assignedDriverId?: number) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
@@ -50,7 +50,8 @@ export const useVehicleFleet = () => {
       const data = await vehicleService.getVehicles(
         statusFilter === 'ALL' ? undefined : statusFilter,
         brandFilter === 'ALL' ? undefined : brandFilter,
-        search
+        search,
+        assignedDriverId
       );
       setVehicles(data);
     } catch {
@@ -58,7 +59,7 @@ export const useVehicleFleet = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, brandFilter, search]);
+  }, [statusFilter, brandFilter, search, assignedDriverId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

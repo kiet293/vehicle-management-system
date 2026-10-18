@@ -28,6 +28,7 @@ export const CostPage: React.FC = () => {
 
   const [costs, setCosts] = useState<Cost[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [myVehicleIds, setMyVehicleIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters
@@ -58,10 +59,17 @@ export const CostPage: React.FC = () => {
 
   const fetchVehicles = async () => {
     try {
-      const data = await vehicleService.getVehicles();
+      const data = await vehicleService.getVehicles(
+        undefined,
+        undefined,
+        undefined,
+        isDriver && user ? user.id : undefined
+      );
       setVehicles(data);
+      setMyVehicleIds(isDriver ? data.map((v) => v.id) : []);
     } catch {
       setVehicles([]);
+      setMyVehicleIds([]);
     }
   };
 
@@ -73,10 +81,11 @@ export const CostPage: React.FC = () => {
         selectedCostType === 'ALL' ? undefined : selectedCostType,
         fromDate || undefined,
         toDate || undefined,
-        isDriver && user ? user.id : undefined,
+        undefined,
         search
       );
-      setCosts(data);
+      // Tài xế chỉ thấy chi phí vận hành của (các) xe đang được bàn giao cho mình
+      setCosts(isDriver ? data.filter((c) => myVehicleIds.includes(c.vehicleId)) : data);
     } catch {
       showToast('error', 'Không thể tải danh sách chi phí');
     } finally {
@@ -93,7 +102,7 @@ export const CostPage: React.FC = () => {
       fetchCosts();
     }, 300);
     return () => clearTimeout(timer);
-  }, [search, selectedVehicleId, selectedCostType, fromDate, toDate]);
+  }, [search, selectedVehicleId, selectedCostType, fromDate, toDate, myVehicleIds]);
 
   // Live Currency Masking
   const formatLiveCurrency = (val: string): string => {
@@ -246,7 +255,7 @@ export const CostPage: React.FC = () => {
             className="form-select"
             style={{ width: 'auto', minWidth: '150px' }}
           >
-            <option value="ALL">Tất cả phương tiện</option>
+            <option value="ALL">{isDriver ? 'Tất cả xe được giao' : 'Tất cả phương tiện'}</option>
             {vehicles.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.licensePlate} ({v.brand} {v.model})

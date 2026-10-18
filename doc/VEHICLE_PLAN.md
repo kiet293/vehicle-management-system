@@ -125,7 +125,7 @@ vehicle-service/backend/src/main/java/com/vms/vehicle/
 
 | Method | Path | Query/Body | Trạng thái |
 |---|---|---|---|
-| GET | `/api/vehicles`, `/api/v1/vehicles` | `?status=&brand=&search=` | ✅ |
+| GET | `/api/vehicles`, `/api/v1/vehicles` | `?status=&brand=&search=&assignedDriverId=` | ✅ |
 | GET | `/api/vehicles/{id}` | — | ✅ |
 | POST | `/api/vehicles` | CreateVehicleRequest | ✅ 201 |
 | PUT | `/api/vehicles/{id}` | UpdateVehicleRequest | ✅ |
@@ -154,6 +154,7 @@ vehicle-service/backend/src/main/java/com/vms/vehicle/
 | `lastMaintenanceOdometer` ≤ `currentOdometer` | `VehicleService.updateVehicle()` |
 | Biển số tự chuẩn hóa `29a88888` → `29A-888.88` | `VehicleService.normalizePlate()` |
 | `maintenanceDue` = `(current - lastMaintenance) >= 5000` | `VehicleDTO.fromEntity()` |
+| Tài xế chỉ thấy xe được bàn giao cho mình | `VehicleSpecifications.filterBy(..., assignedDriverId)` (query param `assignedDriverId`) |
 
 ### 1.4 Frontend hiện có
 
@@ -206,7 +207,8 @@ const isDriver = user?.role === 'DRIVER';
 |---|---|
 | Nút "+ Thêm xe mới" | `!isDriver` |
 | Nút "Bàn giao xe" | `status === 'AVAILABLE' && !isDriver` |
-| Nút "Trả xe / Bàn giao" | `status === 'IN_USE'` (ai cũng được) |
+| Nút "Trả xe" | `status === 'IN_USE' && isDriver` (tài xế trả xe) |
+| Nút "Thu hồi xe" | `status === 'IN_USE' && !isDriver` (admin/manager thu hồi; tái dùng modal nhập km) |
 | Nút "Bảo dưỡng xong" | `status === 'MAINTENANCE' && !isDriver` |
 | Nút "Sửa xe" | `!isDriver` |
 | Nút "Ngừng khai thác" | `!isDriver && status !== 'DECOMMISSIONED'` |
@@ -1218,6 +1220,8 @@ refactor(vehicle): extract vehicle page into reusable components
 | | #7 Unit test | (xem git log) | ✅ xong | **95 test, 0 failure**: service 41, DTO 5, controller validation 27, email 5, integration 17 |
 | 2026-10-05 | #8 Trip log | (xem git log) | ✅ xong | Bảng `vehicle_trips` 15 cột; assign→IN_PROGRESS, return→COMPLETED (+distanceKm, notes), soft-delete→CANCELLED; 2 endpoint; modal lịch sử; **126 test** |
 | 2026-10-05 | #6 Tách components | refactor(vehicle) | ✅ xong | `VehiclePage` 1240 → **146 dòng**; 12 component + 2 hook + `utils/vehicleFormat.ts`; xóa `.gitkeep`; `tsc` exit 0, `npm run build` OK. Còn: verify UI/lucồng bằng tay |
+| 2026-10-18 | Bổ sung sau merge `dev` | feat(vehicle) | ✅ xong | Lọc xe theo tài xế (`assignedDriverId` ở backend) + nút "Thu hồi xe" cho admin/manager; **127 test**; `tsc` exit 0, `npm run build` OK |
+| 2026-10-18 | Cost: tài xế chỉ thấy chi phí xe được giao | `72477da` | ✅ xong | `CostPage` lọc theo `assignedDriverId` lấy từ vehicle-service; `tsc` exit 0; chờ test tay |
 
 ---
 
@@ -1255,6 +1259,76 @@ Invoke-RestMethod "$b/api/v1/vehicles/1/trips" | ConvertTo-Json -Depth 4
 | `500` khi POST body thiếu field | Chưa có `@Valid` ở controller | Kiểm tra mục 4.3 / P0-2 |
 | Bảng `vehicle_trips` không tồn tại | Hibernate chưa tạo | Restart service, kiểm tra `ddl-auto: update` |
 | Test fail "table not found" | H2 chưa tạo schema | Kiểm tra `ddl-auto: create-drop` trong `application-test.yml` |
+
+---
+
+## 11. BỔ SUNG (2026-10-18) — LỌC XE THEO TÀI XẾ & NÚT "THU HỒI XE"
+
+Yêu cầu nhóm thống nhất sau khi merge `dev`: (1) tài xế nào chỉ thấy xe mà tài xế đó được admin/manager bàn giao; (2) khi bàn giao xe cho tài xế, giao diện admin/manager hiện nút **"Thu hồi xe"** thay cho **"Trả xe"**.
+
+### 11.1 Quyết định thiết kế
+
+| Điểm | Chốt |
+|---|---|
+| Lọc theo tài xế ở đâu | **Backend** — thêm query param `assignedDriverId` vào `GET /api/vehicles` (lọc ở DB qua Specification), không lọc ở frontend |
+| Nút "Thu hồi xe" làm gì | **Tái dùng** luồng `returnVehicle` + `ReturnVehicleModal` (nhập số km), chỉ đổi nhãn nút + tiêu đề |
+| Tài xế vẫn thấy gì | Vẫn là nút **"Trả xe"** cho xe `IN_USE` của mình |
+| Nguồn driverId | `isDriver ? user?.id : undefined` từ `useAuth()` — chỉ DRIVER mới bị giới hạn |
+
+### 11.2 Backend (đã làm)
+
+- `VehicleSpecifications.filterBy(status, brand, search, assignedDriverId)` — thêm predicate `cb.equal(root.get("assignedDriverId"), assignedDriverId)`.
+- `VehicleService.getAllVehicles(status, brand, search, assignedDriverId)`.
+- `VehicleController`: thêm `@RequestParam(required = false) Long assignedDriverId`.
+- Test: cập nhật các call cũ (thêm `null`); thêm integration test `filtersByAssignedDriver` (lọc đúng 1 xe của driver 9; driver 99 ra rỗng; kết hợp `status=AVAILABLE` ra rỗng vì xe đang `IN_USE`).
+
+### 11.3 Frontend (đã làm)
+
+- `services/vehicleService.ts`: `getVehicles(status?, brand?, search?, assignedDriverId?)`.
+- `hooks/useVehicleFleet.ts`: `useVehicleFleet(assignedDriverId?)` → truyền vào request, thêm vào dependency của `fetchVehicles`.
+- `pages/VehiclePage.tsx`: `useVehicleFleet(isDriver ? user?.id : undefined)`.
+- `components/VehicleRowActions.tsx`: xe `IN_USE` — `isDriver` → "Trả xe" / "Trả xe / Bàn giao"; `!isDriver` → "Thu hồi" / "Thu hồi xe".
+- `components/VehicleDetailModal.tsx`: nút trong nhánh `!isDriver` đổi "Bàn giao lại / Trả xe" → "Thu hồi xe".
+
+### 11.4 Tiêu chí nghiệm thu
+
+- [x] `docker run ... mvn test` → **Tests run: 127, Failures: 0, Errors: 0 — BUILD SUCCESS**
+- [x] `npx tsc --noEmit` → exit 0
+- [x] `npm run build` → OK
+- [x] Test tay: đăng nhập `driver1/driver123` chỉ thấy xe được bàn giao; `admin/admin123` thấy nút "Thu hồi xe" ở xe `IN_USE` (user xác nhận OK)
+
+---
+
+## 12. BỔ SUNG (2026-10-18) — TÀI XẾ CHỈ THẤY CHI PHÍ CỦA XE ĐƯỢC GIAO (module Cost)
+
+Yêu cầu: ở giao diện **Chi phí vận hành** của tài khoản tài xế, chỉ hiển thị chi phí của xe đang được bàn giao cho mình, thay vì hiện toàn bộ như trước.
+
+### 12.1 Vấn đề của cách cũ
+
+`CostPage` lọc theo `driverId` (chi phí do chính tài xế kê khai). Với seed hiện tại, `driver1` (id 3) vẫn thấy chi phí của **nhiều xe** (1, 2, 5) — không đúng phạm vi "xe được giao".
+
+### 12.2 Quyết định thiết kế
+
+| Điểm | Chốt |
+|---|---|
+| Lọc theo cái gì | Theo **xe đang được bàn giao** (`assignedDriverId`), không theo người kê khai |
+| Nguồn dữ liệu | Cost service **không biết** phân công xe (DB riêng) → gọi vehicle-service `getVehicles(..., assignedDriverId=user.id)` để lấy danh sách xe của tài xế, rồi lọc danh sách chi phí theo tập `vehicleId` đó |
+| Phạm vi sửa | **Chỉ frontend** `CostPage.tsx` (cost-service backend không đổi vì gateway không truyền danh tính user → không ép được ở server) |
+| Áp dụng cho | Cả bảng chi phí, dropdown lọc xe, và dropdown phương tiện trong modal "Tạo phiếu chi phí" |
+
+### 12.3 Thay đổi (đã làm)
+
+- Thêm state `myVehicleIds`; `fetchVehicles()` gọi `vehicleService.getVehicles(undefined, undefined, undefined, isDriver ? user.id : undefined)` và lưu id các xe được giao.
+- `fetchCosts()`: bỏ tham số `driverId`; với tài xế lọc `data.filter(c => myVehicleIds.includes(c.vehicleId))`.
+- Thêm `myVehicleIds` vào dependency của `useEffect` fetch chi phí.
+- Nhãn option "Tất cả phương tiện" → "Tất cả xe được giao" khi là tài xế.
+
+### 12.4 Tiêu chí nghiệm thu
+
+- [x] `npx tsc --noEmit` → exit 0
+- [x] `npm run build` → OK
+- [x] API verify: 8 phiếu tổng; xe `30H-123.45` (id 2) có đúng 2 phiếu → `driver1` thấy 2
+- [ ] Test tay: `driver1/driver123` → Chi phí vận hành chỉ hiện 2 phiếu của `30H-123.45`; `admin/admin123` → đủ 8 phiếu
 
 ---
 

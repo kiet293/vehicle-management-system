@@ -14,12 +14,16 @@ public final class VehicleSpecifications {
     private VehicleSpecifications() {
     }
 
-    public static Specification<Vehicle> filterBy(VehicleStatus status, String brand, String search) {
+    public static Specification<Vehicle> filterBy(VehicleStatus status, String brand, String search, Long assignedDriverId) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            if (assignedDriverId != null) {
+                predicates.add(cb.equal(root.get("assignedDriverId"), assignedDriverId));
             }
 
             if (brand != null && !brand.trim().isEmpty()) {
