@@ -76,7 +76,23 @@ export interface Cost {
   costDate: string;
   description?: string;
   receiptImageUrl?: string;
+  invoiceNumber?: string;
+  merchantName?: string;
   createdAt?: string;
+}
+
+export interface OcrReceiptResponse {
+  receiptImageUrl: string;
+  amount: number;
+  costType: CostType;
+  costDate: string;
+  vehiclePlate?: string | null;
+  merchantName?: string | null;
+  invoiceNumber?: string | null;
+  description?: string | null;
+  rawText?: string | null;
+  aiExtracted: boolean;
+  message: string;
 }
 
 export interface CostSummary {

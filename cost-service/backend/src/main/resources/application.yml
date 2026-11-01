@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: cost-service
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 15MB
+      max-request-size: 15MB
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:cost_db}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${DB_USERNAME:root}
@@ -21,6 +26,13 @@ spring:
 
 services:
   email-service-url: ${EMAIL_SERVICE_URL:http://localhost:8084}
+
+app:
+  upload:
+    dir: ${UPLOAD_DIR:/app/uploads/receipts}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-1.5-flash}
 
 management:
   endpoints:
