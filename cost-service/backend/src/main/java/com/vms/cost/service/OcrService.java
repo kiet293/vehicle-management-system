@@ -37,8 +37,15 @@ public class OcrService {
     @Value("${app.gemini.api-key:${GEMINI_API_KEY:}}")
     private String geminiApiKey;
 
-    @Value("${app.gemini.model:gemini-1.5-flash}")
+    @Value("${app.gemini.model:gemini-3.5-flash}")
     private String geminiModel;
+
+    private static final List<String> FALLBACK_MODELS = List.of(
+            "gemini-3.5-flash",
+            "gemini-3.8-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-flash-latest"
+    );
 
     /**
      * Quét và trích xuất thông tin hóa đơn từ file ảnh tải lên
@@ -57,19 +64,24 @@ public class OcrService {
         String savedFileName = saveReceiptFile(file);
         String receiptImageUrl = (baseUrl != null ? baseUrl : "") + "/api/costs/receipts/" + savedFileName;
 
-        // 2. Trích xuất thông tin qua AI (Gemini Vision) hoặc Fallback
+        // 2. Kiểm tra API Key từ cấu hình hoặc biến môi trường
+        String activeApiKey = resolveApiKey();
+
+        // 3. Trích xuất thông tin qua AI (Gemini Vision) hoặc Fallback
         OcrReceiptResponse response;
-        if (geminiApiKey != null && !geminiApiKey.trim().isEmpty() && !geminiApiKey.contains("placeholder")) {
+        if (activeApiKey != null && !activeApiKey.trim().isEmpty() && !activeApiKey.contains("placeholder")) {
             try {
-                log.info("Processing receipt with Gemini Vision API (model: {})...", geminiModel);
-                response = extractWithGeminiVision(file);
+                log.info("Processing receipt with Gemini Vision AI (configured model: {})...", geminiModel);
+                response = extractWithGeminiVision(file, activeApiKey);
                 response.setAiExtracted(true);
                 response.setMessage("Trích xuất thông tin hóa đơn thành công bằng Gemini Vision AI");
             } catch (Exception e) {
-                log.warn("Gemini Vision API extraction failed ({}), falling back to smart rule-based parser.", e.getMessage());
+                log.warn("Gemini Vision API extraction failed ({}), falling back to smart rule-based parser.",
+                        e.getMessage());
                 response = fallbackSmartParser(file.getOriginalFilename());
                 response.setAiExtracted(false);
-                response.setMessage("Trích xuất thông tin tự động (Gemini API lỗi hoặc quá tải: " + e.getMessage() + ")");
+                response.setMessage(
+                        "Trích xuất thông tin tự động (Gemini API lỗi: " + e.getMessage() + ")");
             }
         } else {
             log.info("GEMINI_API_KEY not configured. Using Smart Rule-based Mock OCR parser for demonstration.");
@@ -82,63 +94,97 @@ public class OcrService {
         return response;
     }
 
+    private String resolveApiKey() {
+        if (geminiApiKey != null && !geminiApiKey.trim().isEmpty() && !geminiApiKey.contains("placeholder")) {
+            return geminiApiKey.trim();
+        }
+        String envKey = System.getenv("GEMINI_API_KEY");
+        if (envKey != null && !envKey.trim().isEmpty() && !envKey.contains("placeholder")) {
+            return envKey.trim();
+        }
+        return null;
+    }
+
     /**
      * Gọi Google Gemini Vision API để bóc tách hóa đơn
      */
-    private OcrReceiptResponse extractWithGeminiVision(MultipartFile file) throws IOException {
+    private OcrReceiptResponse extractWithGeminiVision(MultipartFile file, String apiKey) throws IOException {
         String base64Data = Base64.getEncoder().encodeToString(file.getBytes());
         String mimeType = file.getContentType() != null ? file.getContentType() : "image/jpeg";
 
         String prompt = """
-            Bạn là hệ thống AI chuyên gia bóc tách hóa đơn chi phí cho xe & phương tiện giao thông tại Việt Nam (xăng dầu Petrolimex/PVOIL, vé BOT cầu đường, phiếu bảo dưỡng sửa chữa garage, bảo hiểm, gửi xe, rửa xe...).
-            Hãy đọc kỹ hình ảnh hóa đơn và trích xuất ra duy nhất một đối tượng JSON hợp lệ (không kèm markdown ```json, không giải thích gì thêm) theo schema sau:
-            {
-              "amount": <Số tiền tổng thanh toán bằng số nguyên hoặc số thực, ví dụ: 850000>,
-              "costType": "<Một trong các giá trị: FUEL, TOLL, MAINTENANCE, INSURANCE, OTHER>",
-              "costDate": "<Ngày hóa đơn định dạng YYYY-MM-DD nếu thấy, nếu không thấy hoặc sau ngày hiện tại thì trả về null>",
-              "vehiclePlate": "<Biển số xe nếu có ghi trên hóa đơn dạng 30A-888.88 hoặc 51K-999.99, hoặc null>",
-              "merchantName": "<Tên đơn vị phát hành hóa đơn / cây xăng / trạm thu phí / garage>",
-              "invoiceNumber": "<Số hóa đơn / Số vé / Mã tra cứu nếu có>",
-              "description": "<Tóm tắt ngắn gọn nội dung chi phí bằng tiếng Việt>"
-            }
-            Quy tắc phân loại costType:
-            - Chữ xăng, dầu, DO, RON 95, E5, Petrolimex, PV OIL, lít, đ/lít -> FUEL
-            - Chữ BOT, vé cầu đường, thu phí tự động, VETC, ePass -> TOLL
-            - Chữ bảo dưỡng, thay dầu, nhớt, sửa chữa, phụ tùng, lốp xe, garage -> MAINTENANCE
-            - Chữ bảo hiểm, PTI, Bảo Việt, PVI, TNDS -> INSURANCE
-            - Khác -> OTHER
-            """;
-
-        String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + geminiModel + ":generateContent?key=" + geminiApiKey.trim();
+                Bạn là hệ thống AI chuyên gia bóc tách hóa đơn chi phí cho xe & phương tiện giao thông tại Việt Nam (xăng dầu Petrolimex/PVOIL, vé BOT cầu đường, phiếu bảo dưỡng sửa chữa garage, bảo hiểm, gửi xe, rửa xe...).
+                Hãy đọc kỹ hình ảnh hóa đơn và trích xuất ra duy nhất một đối tượng JSON hợp lệ (không kèm markdown ```json, không giải thích gì thêm) theo schema sau:
+                {
+                  "amount": <Số tiền tổng thanh toán bằng số nguyên hoặc số thực, ví dụ: 850000>,
+                  "costType": "<Một trong các giá trị: FUEL, TOLL, MAINTENANCE, INSURANCE, OTHER>",
+                  "costDate": "<Ngày hóa đơn định dạng YYYY-MM-DD nếu thấy, nếu không thấy thì null>",
+                  "vehiclePlate": "<Biển số xe nếu có ghi trên hóa đơn dạng 30A-888.88 hoặc 51K-999.99, hoặc null>",
+                  "merchantName": "<Tên đơn vị phát hành hóa đơn / cây xăng / trạm thu phí / garage>",
+                  "invoiceNumber": "<Số hóa đơn / Số vé / Mã tra cứu nếu có>",
+                  "description": "<Tóm tắt ngắn gọn nội dung chi phí bằng tiếng Việt>"
+                }
+                Quy tắc phân loại costType:
+                - Chữ xăng, dầu, DO, RON 95, E5, Petrolimex, PV OIL, lít, đ/lít -> FUEL
+                - Chữ BOT, vé cầu đường, thu phí tự động, VETC, ePass -> TOLL
+                - Chữ bảo dưỡng, thay dầu, nhớt, sửa chữa, phụ tùng, lốp xe, garage -> MAINTENANCE
+                - Chữ bảo hiểm, PTI, Bảo Việt, PVI, TNDS -> INSURANCE
+                - Khác -> OTHER
+                """;
 
         Map<String, Object> inlineData = Map.of(
                 "mime_type", mimeType,
-                "data", base64Data
-        );
+                "data", base64Data);
         Map<String, Object> part1 = Map.of("text", prompt);
         Map<String, Object> part2 = Map.of("inline_data", inlineData);
 
         Map<String, Object> contentObj = Map.of(
-                "parts", List.of(part1, part2)
-        );
+                "parts", List.of(part1, part2));
 
         Map<String, Object> generationConfig = Map.of(
                 "response_mime_type", "application/json",
-                "temperature", 0.1
-        );
+                "temperature", 0.1);
 
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(contentObj),
-                "generationConfig", generationConfig
-        );
+                "generationConfig", generationConfig);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-        String jsonResponse = restTemplate.postForObject(apiUrl, entity, String.class);
+        // Danh sách model ưu tiên thử
+        List<String> modelsToTry = new ArrayList<>();
+        if (geminiModel != null && !geminiModel.trim().isEmpty() && !geminiModel.equals("gemini-1.5-flash")) {
+            modelsToTry.add(geminiModel.trim());
+        }
+        for (String m : FALLBACK_MODELS) {
+            if (!modelsToTry.contains(m)) {
+                modelsToTry.add(m);
+            }
+        }
+
+        String jsonResponse = null;
+        Exception lastException = null;
+
+        for (String modelName : modelsToTry) {
+            String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName
+                    + ":generateContent?key=" + apiKey;
+            try {
+                log.info("Attempting Gemini OCR with model: {}", modelName);
+                jsonResponse = restTemplate.postForObject(apiUrl, entity, String.class);
+                if (jsonResponse != null && !jsonResponse.isEmpty()) {
+                    log.info("Gemini OCR succeeded with model: {}", modelName);
+                    break;
+                }
+            } catch (Exception ex) {
+                log.warn("Gemini model {} failed: {}", modelName, ex.getMessage());
+                lastException = ex;
+            }
+        }
+
         if (jsonResponse == null || jsonResponse.isEmpty()) {
-            throw new RuntimeException("Phản hồi rỗng từ Gemini API");
+            throw new RuntimeException("Phản hồi rỗng từ Gemini API hoặc tất cả các model đều thất bại", lastException);
         }
 
         JsonNode rootNode = objectMapper.readTree(jsonResponse);
@@ -147,7 +193,23 @@ public class OcrService {
             throw new RuntimeException("Không tìm thấy kết quả từ Gemini API: " + jsonResponse);
         }
 
-        String generatedText = candidates.get(0).path("content").path("parts").get(0).path("text").asText();
+        JsonNode partsNode = candidates.get(0).path("content").path("parts");
+        String generatedText = "";
+        if (partsNode.isArray()) {
+            for (JsonNode p : partsNode) {
+                if (p.hasNonNull("text")) {
+                    String t = p.get("text").asText().trim();
+                    if (t.startsWith("{") || t.startsWith("```")) {
+                        generatedText = t;
+                        break;
+                    }
+                    if (generatedText.isEmpty()) {
+                        generatedText = t;
+                    }
+                }
+            }
+        }
+
         log.debug("Gemini raw generated text: {}", generatedText);
 
         // Parse JSON output của Gemini
@@ -159,32 +221,38 @@ public class OcrService {
         if (extracted.hasNonNull("amount")) {
             try {
                 amount = new BigDecimal(extracted.get("amount").asText().replaceAll("[^0-9.]", ""));
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         CostType costType = CostType.FUEL;
         if (extracted.hasNonNull("costType")) {
             try {
                 costType = CostType.valueOf(extracted.get("costType").asText().toUpperCase().trim());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         LocalDate costDate = null;
         if (extracted.hasNonNull("costDate")) {
             try {
                 costDate = LocalDate.parse(extracted.get("costDate").asText().trim(), DateTimeFormatter.ISO_LOCAL_DATE);
-                if (costDate.isAfter(LocalDate.now())) {
+                if (costDate.isAfter(LocalDate.now().plusDays(2))) {
                     costDate = LocalDate.now();
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         if (costDate == null) {
             costDate = LocalDate.now();
         }
 
-        String vehiclePlate = extracted.hasNonNull("vehiclePlate") ? extracted.get("vehiclePlate").asText().trim() : null;
-        String merchantName = extracted.hasNonNull("merchantName") ? extracted.get("merchantName").asText().trim() : null;
-        String invoiceNumber = extracted.hasNonNull("invoiceNumber") ? extracted.get("invoiceNumber").asText().trim() : null;
+        String vehiclePlate = extracted.hasNonNull("vehiclePlate") ? extracted.get("vehiclePlate").asText().trim()
+                : null;
+        String merchantName = extracted.hasNonNull("merchantName") ? extracted.get("merchantName").asText().trim()
+                : null;
+        String invoiceNumber = extracted.hasNonNull("invoiceNumber") ? extracted.get("invoiceNumber").asText().trim()
+                : null;
         String description = extracted.hasNonNull("description") ? extracted.get("description").asText().trim() : null;
 
         return OcrReceiptResponse.builder()
@@ -217,7 +285,8 @@ public class OcrService {
             costType = CostType.TOLL;
             merchantName = "Trạm thu phí BOT QL1A";
             description = "Phí qua trạm BOT tự động ePass";
-        } else if (lower.contains("bao_duong") || lower.contains("sua_chua") || lower.contains("garage") || lower.contains("maintenance")) {
+        } else if (lower.contains("bao_duong") || lower.contains("sua_chua") || lower.contains("garage")
+                || lower.contains("maintenance")) {
             amount = new BigDecimal("2850000");
             costType = CostType.MAINTENANCE;
             merchantName = "Garage Ô tô Trung tâm Dịch vụ AutoCare";
@@ -265,7 +334,8 @@ public class OcrService {
                 extension = ".jpg";
             }
 
-            String cleanFileName = "receipt_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 8) + extension;
+            String cleanFileName = "receipt_" + System.currentTimeMillis() + "_"
+                    + UUID.randomUUID().toString().substring(0, 8) + extension;
             Path destination = targetDir.resolve(cleanFileName);
 
             Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
@@ -294,4 +364,3 @@ public class OcrService {
         }
     }
 }
-

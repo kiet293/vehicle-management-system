@@ -106,7 +106,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-vms_password}
       EMAIL_SERVICE_URL: http://email-service:8084
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
     volumes:
       - cost_uploads:/app/uploads/receipts
     depends_on:

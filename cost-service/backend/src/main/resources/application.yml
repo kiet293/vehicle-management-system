@@ -32,7 +32,7 @@ app:
     dir: ${UPLOAD_DIR:/app/uploads/receipts}
   gemini:
     api-key: ${GEMINI_API_KEY:}
-    model: ${GEMINI_MODEL:gemini-1.5-flash}
+    model: ${GEMINI_MODEL:gemini-3.5-flash}
 
 management:
   endpoints:
