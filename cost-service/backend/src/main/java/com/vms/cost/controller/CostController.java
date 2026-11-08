@@ -4,15 +4,25 @@ import com.vms.cost.common.ApiResponse;
 import com.vms.cost.dto.CostDTO;
 import com.vms.cost.dto.CostSummaryDTO;
 import com.vms.cost.dto.CreateCostRequest;
+import com.vms.cost.dto.OcrReceiptResponse;
 import com.vms.cost.dto.UpdateCostRequest;
 import com.vms.cost.entity.CostType;
 import com.vms.cost.service.CostService;
+import com.vms.cost.service.OcrService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -22,6 +32,7 @@ import java.util.List;
 public class CostController {
 
     private final CostService costService;
+    private final OcrService ocrService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<CostDTO>>> getAllCosts(
@@ -68,5 +79,39 @@ public class CostController {
             @RequestParam(required = false) Integer month) {
         CostSummaryDTO summary = costService.getSummary(year, month);
         return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    /**
+     * OCR API: Nhận file ảnh hóa đơn, quét và trả về dữ liệu trích xuất tự động
+     */
+    @PostMapping(value = "/ocr/scan-receipt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<OcrReceiptResponse>> scanReceipt(
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest request) {
+        // BaseUrl để trả về link ảnh đầy đủ nếu cần
+        String baseUrl = "";
+        OcrReceiptResponse response = ocrService.scanReceipt(file, baseUrl);
+        return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
+    }
+
+    /**
+     * Phục vụ xem file ảnh hóa đơn đã tải lên
+     */
+    @GetMapping("/receipts/{filename:.+}")
+    public ResponseEntity<Resource> getReceiptImage(@PathVariable String filename) {
+        Resource resource = ocrService.loadReceiptAsResource(filename);
+
+        String contentType = "application/octet-stream";
+        try {
+            String probeType = Files.probeContentType(Paths.get(resource.getFile().getAbsolutePath()));
+            if (probeType != null) {
+                contentType = probeType;
+            }
+        } catch (IOException ignored) {}
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 }

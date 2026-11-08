@@ -56,6 +56,12 @@ public class Cost {
     @Column(name = "receipt_image_url", length = 500)
     private String receiptImageUrl;
 
+    @Column(name = "invoice_number", length = 50)
+    private String invoiceNumber;
+
+    @Column(name = "merchant_name", length = 150)
+    private String merchantName;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

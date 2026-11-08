@@ -6,6 +6,8 @@ networks:
 volumes:
   mysql_data:
     driver: local
+  cost_uploads:
+    driver: local
 
 services:
   # =========================================================================
@@ -28,7 +30,7 @@ services:
     networks:
       - vehicle-management-network
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p${MYSQL_ROOT_PASSWORD:-rootpassword} || exit 1"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -uroot -p${MYSQL_ROOT_PASSWORD:-rootpassword} || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -85,7 +87,7 @@ services:
       - vehicle-management-network
 
   # =========================================================================
-  # Backend Microservice: Cost Service (Port 8083)
+  # Backend Microservice: Cost Service (Port 8083) - With AI OCR
   # =========================================================================
   cost-service:
     build:
@@ -103,6 +105,10 @@ services:
       DB_USERNAME: ${DB_USERNAME:-vms_user}
       DB_PASSWORD: ${DB_PASSWORD:-vms_password}
       EMAIL_SERVICE_URL: http://email-service:8084
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
+    volumes:
+      - cost_uploads:/app/uploads/receipts
     depends_on:
       mysql:
         condition: service_healthy
@@ -202,7 +208,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL-http://localhost:8080}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public

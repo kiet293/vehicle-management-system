@@ -76,7 +76,23 @@ export interface Cost {
   costDate: string;
   description?: string;
   receiptImageUrl?: string;
+  invoiceNumber?: string;
+  merchantName?: string;
   createdAt?: string;
+}
+
+export interface OcrReceiptResponse {
+  receiptImageUrl: string;
+  amount: number;
+  costType: CostType;
+  costDate: string;
+  vehiclePlate?: string | null;
+  merchantName?: string | null;
+  invoiceNumber?: string | null;
+  description?: string | null;
+  rawText?: string | null;
+  aiExtracted: boolean;
+  message: string;
 }
 
 export interface CostSummary {
@@ -139,3 +155,27 @@ export interface TopVehicle {
   costCount: number;
   totalCost: number;
 }
+
+export type NotificationType =
+  | 'VEHICLE_ASSIGNED'
+  | 'VEHICLE_REVOKED'
+  | 'VEHICLE_RETURNED'
+  | 'MAINTENANCE_ALERT'
+  | 'HIGH_COST_ALERT'
+  | 'SYSTEM';
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  targetUserId?: number;
+  targetUserEmail?: string;
+  targetRole?: string;
+  vehiclePlate?: string;
+  vehicleId?: number;
+  actorName?: string;
+  read: boolean;
+  createdAt: string;
+}
+

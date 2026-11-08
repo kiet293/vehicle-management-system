@@ -169,9 +169,12 @@ public class VehicleService {
                 .build());
 
         // Async notify driver
-        if (request.getDriverEmail() != null && !request.getDriverEmail().trim().isEmpty()) {
-            emailClient.sendAssignmentNotification(vehicle.getLicensePlate(), request.getDriverName(), request.getDriverEmail());
-        }
+        emailClient.sendAssignmentNotification(
+                vehicle.getLicensePlate(),
+                request.getDriverId(),
+                request.getDriverName(),
+                request.getDriverEmail()
+        );
 
         return VehicleDTO.fromEntity(updated);
     }
@@ -187,6 +190,9 @@ public class VehicleService {
                     request.getNewOdometer(), vehicle.getCurrentOdometer()
             ));
         }
+
+        Long oldDriverId = vehicle.getAssignedDriverId();
+        String oldDriverName = vehicle.getAssignedDriverName();
 
         vehicle.setCurrentOdometer(request.getNewOdometer());
         vehicle.setAssignedDriverId(null);
@@ -207,6 +213,33 @@ public class VehicleService {
         }
 
         Vehicle updated = vehicleRepository.save(vehicle);
+
+        // Gửi thông báo In-App Notification:
+        String notesLower = request.getNotes() != null ? request.getNotes().toLowerCase() : "";
+        if (notesLower.contains("thu hồi") || notesLower.contains("revoke")) {
+            // Admin thu hồi xe -> Thông báo gửi riêng cho Tài xế
+            if (oldDriverId != null) {
+                emailClient.sendRevocationNotification(
+                        vehicle.getLicensePlate(),
+                        oldDriverId,
+                        oldDriverName,
+                        null,
+                        "Quản trị viên"
+                );
+            }
+        } else {
+            // Tài xế trả xe -> Thông báo gửi cho Quản trị viên (Admin & Manager)
+            if (oldDriverId != null || (oldDriverName != null && !oldDriverName.isBlank())) {
+                emailClient.sendReturnNotification(
+                        vehicle.getLicensePlate(),
+                        oldDriverId,
+                        oldDriverName,
+                        request.getNewOdometer(),
+                        request.getNotes()
+                );
+            }
+        }
+
         return VehicleDTO.fromEntity(updated);
     }
 
