@@ -113,5 +113,13 @@ public class NotificationService {
     public int markAllAsRead(Long userId, String email, String role) {
         return notificationRepository.markAllAsRead(userId, email, role);
     }
+
+    public boolean deleteNotification(String id) {
+        return notificationRepository.deleteById(id);
+    }
+
+    public int deleteAll(Long userId, String email, String role) {
+        return notificationRepository.deleteAll(userId, email, role);
+    }
 }
 

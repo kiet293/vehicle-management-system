@@ -61,5 +61,27 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success("Đã đánh dấu đã đọc toàn bộ " + count + " thông báo",
                 Map.of("updatedCount", count)));
     }
+
+    /**
+     * Xóa 1 thông báo
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Boolean>> deleteNotification(@PathVariable String id) {
+        boolean deleted = notificationService.deleteNotification(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã xóa thông báo thành công", deleted));
+    }
+
+    /**
+     * Xóa toàn bộ thông báo của người dùng
+     */
+    @DeleteMapping("/clear-all")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> clearAll(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false, defaultValue = "DRIVER") String role) {
+        int count = notificationService.deleteAll(userId, email, role);
+        return ResponseEntity.ok(ApiResponse.success("Đã xóa toàn bộ " + count + " thông báo",
+                Map.of("deletedCount", count)));
+    }
 }
 

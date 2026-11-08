@@ -23,7 +23,7 @@ public class NotificationRepository {
     }
 
     private void initSeedData() {
-        // Thông báo cho Tài xế Nguyễn Văn An (id=3, email="driver.an@vms.com")
+        // Thông báo cho Tài xế Nguyễn Văn An (id=3, email="driver.an@vms.com") - Mới
         notifications.add(Notification.builder()
                 .id(UUID.randomUUID().toString())
                 .title("🚗 Phân công phương tiện mới: 29A-888.88")
@@ -35,10 +35,10 @@ public class NotificationRepository {
                 .vehiclePlate("29A-888.88")
                 .actorName("Quản trị viên")
                 .isRead(false)
-                .createdAt(LocalDateTime.now().minusMinutes(25))
+                .createdAt(LocalDateTime.now().minusMinutes(15))
                 .build());
 
-        // Thông báo cho Admin & Manager: Tài xế đã trả xe
+        // Thông báo cho Admin & Manager: Tài xế đã trả xe - Hôm nay
         notifications.add(Notification.builder()
                 .id(UUID.randomUUID().toString())
                 .title("✅ Tài xế đã hoàn tất chuyến & trả xe: 30H-123.45")
@@ -48,10 +48,10 @@ public class NotificationRepository {
                 .vehiclePlate("30H-123.45")
                 .actorName("Nguyễn Văn An")
                 .isRead(false)
-                .createdAt(LocalDateTime.now().minusHours(2))
+                .createdAt(LocalDateTime.now().minusHours(5))
                 .build());
 
-        // Thông báo cảnh báo bảo dưỡng cho Admin & Manager
+        // Thông báo cảnh báo bảo dưỡng cho Admin & Manager - Trước đó
         notifications.add(Notification.builder()
                 .id(UUID.randomUUID().toString())
                 .title("🔧 Cảnh báo bảo dưỡng xe 29B-456.78")
@@ -62,6 +62,19 @@ public class NotificationRepository {
                 .actorName("Hệ thống VMS")
                 .isRead(true)
                 .createdAt(LocalDateTime.now().minusDays(1))
+                .build());
+
+        // Thông báo hoàn tất bảo dưỡng định kỳ - Trước đó
+        notifications.add(Notification.builder()
+                .id(UUID.randomUUID().toString())
+                .title("🛡️ Cập nhật trạng thái kiểm định phương tiện: 51F-999.99")
+                .message("Hạn đăng kiểm của xe 51F-999.99 còn 15 ngày. Đội xe vui lòng chuẩn bị kế hoạch đăng kiểm định kỳ.")
+                .type(NotificationType.MAINTENANCE_ALERT)
+                .targetRole("ALL")
+                .vehiclePlate("51F-999.99")
+                .actorName("Phòng Kỹ thuật")
+                .isRead(true)
+                .createdAt(LocalDateTime.now().minusDays(3))
                 .build());
     }
 
@@ -146,6 +159,17 @@ public class NotificationRepository {
             }
         }
         return count;
+    }
+
+    public boolean deleteById(String id) {
+        return notifications.removeIf(n -> n.getId().equals(id));
+    }
+
+    public int deleteAll(Long userId, String email, String role) {
+        List<Notification> userList = findByUser(userId, email, role);
+        List<String> idsToRemove = userList.stream().map(Notification::getId).collect(Collectors.toList());
+        notifications.removeIf(n -> idsToRemove.contains(n.getId()));
+        return idsToRemove.size();
     }
 }
 
