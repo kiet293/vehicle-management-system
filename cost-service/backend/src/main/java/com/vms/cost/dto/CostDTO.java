@@ -28,6 +28,8 @@ public class CostDTO {
     private LocalDate costDate;
     private String description;
     private String receiptImageUrl;
+    private String invoiceNumber;
+    private String merchantName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -46,6 +48,8 @@ public class CostDTO {
                 .costDate(cost.getCostDate())
                 .description(cost.getDescription())
                 .receiptImageUrl(cost.getReceiptImageUrl())
+                .invoiceNumber(cost.getInvoiceNumber())
+                .merchantName(cost.getMerchantName())
                 .createdAt(cost.getCreatedAt())
                 .updatedAt(cost.getUpdatedAt())
                 .build();

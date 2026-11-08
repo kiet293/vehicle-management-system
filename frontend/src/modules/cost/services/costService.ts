@@ -1,5 +1,5 @@
 import apiClient from '../../../services/api';
-import { Cost, CostSummary, ApiResponse, CostType } from '../../../types';
+import { Cost, CostSummary, ApiResponse, CostType, OcrReceiptResponse } from '../../../types';
 
 export interface CreateCostData {
   vehicleId: number;
@@ -13,6 +13,8 @@ export interface CreateCostData {
   costDate: string;
   description?: string;
   receiptImageUrl?: string;
+  invoiceNumber?: string;
+  merchantName?: string;
 }
 
 export interface UpdateCostData {
@@ -22,6 +24,8 @@ export interface UpdateCostData {
   costDate?: string;
   description?: string;
   receiptImageUrl?: string;
+  invoiceNumber?: string;
+  merchantName?: string;
 }
 
 export const costService = {
@@ -61,6 +65,17 @@ export const costService = {
   getSummary: async (year?: number, month?: number): Promise<CostSummary> => {
     const res = await apiClient.get<ApiResponse<CostSummary>>('/api/costs/summary', {
       params: { year, month },
+    });
+    return res.data.data;
+  },
+
+  scanReceipt: async (file: File): Promise<OcrReceiptResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post<ApiResponse<OcrReceiptResponse>>('/api/costs/ocr/scan-receipt', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     return res.data.data;
   },

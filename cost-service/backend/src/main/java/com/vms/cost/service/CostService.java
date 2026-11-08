@@ -43,7 +43,9 @@ public class CostService {
                     String s = search.trim().toLowerCase();
                     return (c.getVehiclePlate() != null && c.getVehiclePlate().toLowerCase().contains(s)) ||
                             (c.getDescription() != null && c.getDescription().toLowerCase().contains(s)) ||
-                            (c.getDriverName() != null && c.getDriverName().toLowerCase().contains(s));
+                            (c.getDriverName() != null && c.getDriverName().toLowerCase().contains(s)) ||
+                            (c.getMerchantName() != null && c.getMerchantName().toLowerCase().contains(s)) ||
+                            (c.getInvoiceNumber() != null && c.getInvoiceNumber().toLowerCase().contains(s));
                 })
                 .sorted((a, b) -> b.getCostDate().compareTo(a.getCostDate()))
                 .map(CostDTO::fromEntity)
@@ -84,6 +86,8 @@ public class CostService {
                 .costDate(date)
                 .description(request.getDescription())
                 .receiptImageUrl(request.getReceiptImageUrl())
+                .invoiceNumber(request.getInvoiceNumber())
+                .merchantName(request.getMerchantName())
                 .build();
 
         Cost saved = costRepository.save(cost);
@@ -131,6 +135,12 @@ public class CostService {
         }
         if (request.getReceiptImageUrl() != null) {
             cost.setReceiptImageUrl(request.getReceiptImageUrl());
+        }
+        if (request.getInvoiceNumber() != null) {
+            cost.setInvoiceNumber(request.getInvoiceNumber());
+        }
+        if (request.getMerchantName() != null) {
+            cost.setMerchantName(request.getMerchantName());
         }
 
         Cost updated = costRepository.save(cost);

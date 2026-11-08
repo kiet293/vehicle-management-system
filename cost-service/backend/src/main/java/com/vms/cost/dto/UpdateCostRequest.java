@@ -20,4 +20,6 @@ public class UpdateCostRequest {
     private LocalDate costDate;
     private String description;
     private String receiptImageUrl;
+    private String invoiceNumber;
+    private String merchantName;
 }
