@@ -139,3 +139,27 @@ export interface TopVehicle {
   costCount: number;
   totalCost: number;
 }
+
+export type NotificationType =
+  | 'VEHICLE_ASSIGNED'
+  | 'VEHICLE_REVOKED'
+  | 'VEHICLE_RETURNED'
+  | 'MAINTENANCE_ALERT'
+  | 'HIGH_COST_ALERT'
+  | 'SYSTEM';
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  targetUserId?: number;
+  targetUserEmail?: string;
+  targetRole?: string;
+  vehiclePlate?: string;
+  vehicleId?: number;
+  actorName?: string;
+  read: boolean;
+  createdAt: string;
+}
+

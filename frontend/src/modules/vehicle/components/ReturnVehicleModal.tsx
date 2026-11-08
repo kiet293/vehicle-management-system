@@ -8,6 +8,7 @@ interface ReturnVehicleModalProps {
   onClose: () => void;
   vehicle: Vehicle | null;
   onReturn: (newOdometer: number, notes: string) => Promise<void>;
+  isDriver?: boolean;
 }
 
 export const ReturnVehicleModal: React.FC<ReturnVehicleModalProps> = ({
@@ -15,6 +16,7 @@ export const ReturnVehicleModal: React.FC<ReturnVehicleModalProps> = ({
   onClose,
   vehicle,
   onReturn,
+  isDriver = false,
 }) => {
   const [returnKm, setReturnKm] = useState('');
   const [returnNotes, setReturnNotes] = useState('');
@@ -69,9 +71,15 @@ export const ReturnVehicleModal: React.FC<ReturnVehicleModalProps> = ({
       return;
     }
 
+    const finalNotes = returnNotes.trim()
+      ? returnNotes.trim()
+      : isDriver
+      ? 'Tài xế bàn giao trả lại xe sau chuyến đi'
+      : 'Thu hồi xe bởi Quản trị viên';
+
     setIsSubmitting(true);
     try {
-      await onReturn(km, returnNotes);
+      await onReturn(km, finalNotes);
     } finally {
       setIsSubmitting(false);
     }
@@ -81,7 +89,11 @@ export const ReturnVehicleModal: React.FC<ReturnVehicleModalProps> = ({
     <Modal
       isOpen={isOpen && !!vehicle}
       onClose={onClose}
-      title={`Bàn giao lại xe / Kết thúc chuyến: ${vehicle?.licensePlate ?? ''}`}
+      title={
+        isDriver
+          ? `Bàn giao trả lại xe / Kết thúc chuyến: ${vehicle?.licensePlate ?? ''}`
+          : `Thu hồi phương tiện: ${vehicle?.licensePlate ?? ''}`
+      }
     >
       <form onSubmit={handleSubmit}>
         <div
@@ -143,10 +155,16 @@ export const ReturnVehicleModal: React.FC<ReturnVehicleModalProps> = ({
         </div>
 
         <div className="form-group">
-          <label className="form-label">Ghi chú tình trạng bàn giao</label>
+          <label className="form-label">
+            {isDriver ? 'Ghi chú tình trạng xe lúc bàn giao' : 'Lý do & ghi chú thu hồi phương tiện'}
+          </label>
           <textarea
             rows={3}
-            placeholder="Xe hoạt động ổn định, đã vệ sinh sạch sẽ trước khi bàn giao..."
+            placeholder={
+              isDriver
+                ? 'Xe hoạt động ổn định, đã vệ sinh sạch sẽ trước khi bàn giao...'
+                : 'Thu hồi xe để phục vụ nhiệm vụ điều phối mới...'
+            }
             value={returnNotes}
             onChange={(e) => setReturnNotes(e.target.value)}
             className="form-textarea"
@@ -157,8 +175,22 @@ export const ReturnVehicleModal: React.FC<ReturnVehicleModalProps> = ({
           <button type="button" onClick={onClose} className="btn btn-secondary" disabled={isSubmitting}>
             Hủy bỏ
           </button>
-          <button type="submit" className="btn btn-primary" disabled={isSubmitting || !!kmError}>
-            {isSubmitting ? 'Đang cập nhật...' : 'Hoàn thành bàn giao'}
+          <button
+            type="submit"
+            className="btn"
+            style={{
+              background: isDriver
+                ? 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)'
+                : 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
+              color: '#ffffff',
+            }}
+            disabled={isSubmitting || !!kmError}
+          >
+            {isSubmitting
+              ? 'Đang cập nhật...'
+              : isDriver
+              ? 'Xác nhận trả xe'
+              : 'Xác nhận thu hồi xe'}
           </button>
         </div>
       </form>

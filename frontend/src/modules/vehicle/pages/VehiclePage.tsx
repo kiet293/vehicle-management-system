@@ -178,6 +178,7 @@ export const VehiclePage: React.FC = () => {
         onClose={actions.closeReturnModal}
         vehicle={actions.selectedVehicle}
         onReturn={actions.handleReturn}
+        isDriver={isDriver}
       />
 
       <DeleteVehicleModal

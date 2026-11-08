@@ -197,6 +197,7 @@ export const useVehicleActions = (onChanged: () => void) => {
       await vehicleService.assignDriver(selectedVehicle.id, driverId, driverName, driverEmail);
       showToast('success', `Đã bàn giao xe ${selectedVehicle.licensePlate} cho tài xế ${driverName}!`);
       setIsAssignModalOpen(false);
+      window.dispatchEvent(new CustomEvent('vms-notification-refresh'));
       onChanged();
     } catch {
       showToast('error', 'Không thể bàn giao xe');
@@ -213,6 +214,7 @@ export const useVehicleActions = (onChanged: () => void) => {
         showToast('success', `Bàn giao lại xe ${updated.licensePlate} thành công! Số km: ${newOdometer.toLocaleString('vi-VN')} km`);
       }
       setIsReturnModalOpen(false);
+      window.dispatchEvent(new CustomEvent('vms-notification-refresh'));
       onChanged();
     } catch (err: unknown) {
       showToast('error', extractErrorMessage(err, 'Không thể bàn giao lại xe'));
