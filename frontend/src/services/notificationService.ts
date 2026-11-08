@@ -48,6 +48,35 @@ export const notificationService = {
   },
 
   /**
+   * Xóa một thông báo
+   */
+  deleteNotification: async (id: string): Promise<boolean> => {
+    try {
+      const res = await apiClient.delete<ApiResponse<boolean>>(`/api/v1/emails/notifications/${id}`);
+      return !!res.data.data;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Xóa tất cả thông báo của người dùng
+   */
+  clearAllNotifications: async (userId?: number, email?: string, role?: string): Promise<number> => {
+    try {
+      const res = await apiClient.delete<ApiResponse<{ deletedCount: number }>>(
+        '/api/v1/emails/notifications/clear-all',
+        {
+          params: { userId, email, role },
+        }
+      );
+      return res.data.data?.deletedCount || 0;
+    } catch {
+      return 0;
+    }
+  },
+
+  /**
    * Gửi sự kiện thông báo mới (Giao xe, Thu hồi xe, Trả xe, Cảnh báo...)
    */
   createNotificationEvent: async (payload: {

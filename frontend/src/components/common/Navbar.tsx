@@ -12,7 +12,6 @@ import {
   Truck,
   ExternalLink,
   AlertTriangle,
-  Clock,
   Sun,
   Moon,
   CheckCheck,
@@ -21,6 +20,8 @@ import {
   Wrench,
   TrendingUp,
   RotateCcw,
+  Trash2,
+  MoreHorizontal,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -44,6 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [filterTab, setFilterTab] = useState<'all' | 'unread'>('all');
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = useCallback(async () => {
@@ -76,6 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsAlertOpen(false);
+        setShowOptions(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -92,6 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       );
     }
     setIsAlertOpen(false);
+    setShowOptions(false);
     if (item.type === 'HIGH_COST_ALERT') {
       navigate('/costs');
     } else {
@@ -103,19 +107,75 @@ export const Navbar: React.FC<NavbarProps> = ({
     if (!user) return;
     await notificationService.markAllAsRead(user.id, user.email, user.role);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setShowOptions(false);
+  };
+
+  const handleDeleteNotification = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    await notificationService.deleteNotification(id);
+  };
+
+  const handleClearAll = async () => {
+    if (!user) return;
+    if (window.confirm('Bạn có chắc chắn muốn xóa tất cả thông báo không?')) {
+      setNotifications([]);
+      setShowOptions(false);
+      await notificationService.clearAllNotifications(user.id, user.email, user.role);
+    }
   };
 
   const formatTimeAgo = (dateStr: string) => {
     try {
       const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
       if (diff < 60) return 'Vừa xong';
-      if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
-      if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
-      if (diff < 172800) return 'Hôm qua';
+      if (diff < 3600) return `${Math.floor(diff / 60)} phút`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)} giờ`;
+      const days = Math.floor(diff / 86400);
+      if (days < 7) return `${days} ngày`;
       return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
     } catch {
       return dateStr;
     }
+  };
+
+  interface NotificationGroup {
+    id: 'new' | 'today' | 'earlier';
+    title: string;
+    items: AppNotification[];
+  }
+
+  const getNotificationGroups = (items: AppNotification[]): NotificationGroup[] => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    const groups: NotificationGroup[] = [
+      { id: 'new', title: 'Mới', items: [] },
+      { id: 'today', title: 'Hôm nay', items: [] },
+      { id: 'earlier', title: 'Trước đó', items: [] },
+    ];
+
+    items.forEach((item) => {
+      try {
+        const itemTime = new Date(item.createdAt).getTime();
+        const diffHours = (now.getTime() - itemTime) / (1000 * 60 * 60);
+
+        // Mới: Trong vòng 2 giờ qua
+        if (diffHours < 2) {
+          groups[0].items.push(item);
+        } else if (itemTime >= todayStart) {
+          // Hôm nay: Trong ngày hôm nay
+          groups[1].items.push(item);
+        } else {
+          // Trước đó: Trước ngày hôm nay
+          groups[2].items.push(item);
+        }
+      } catch {
+        groups[2].items.push(item);
+      }
+    });
+
+    return groups.filter((g) => g.items.length > 0);
   };
 
   const renderNotificationIcon = (type: string) => {
@@ -344,7 +404,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 position: 'absolute',
                 top: 'calc(100% + 10px)',
                 right: 0,
-                width: '380px',
+                width: '400px',
+                maxWidth: '92vw',
                 background: 'var(--bg-modal)',
                 border: '1px solid var(--border-modal)',
                 borderRadius: '16px',
@@ -357,93 +418,170 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Header */}
               <div
                 style={{
-                  padding: '1rem 1.125rem 0.75rem',
-                  borderBottom: '1px solid var(--border-color)',
+                  padding: '1rem 1rem 0.5rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
                     Thông báo
-                  </span>
+                  </h3>
                   {unreadCount > 0 && (
-                    <span className="badge badge-danger" style={{ fontSize: '0.6875rem', padding: '2px 6px' }}>
-                      {unreadCount} mới
+                    <span
+                      style={{
+                        fontSize: '0.6875rem',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '9999px',
+                        background: 'rgba(59, 130, 246, 0.15)',
+                        color: 'var(--accent-blue)',
+                      }}
+                    >
+                      {unreadCount} chưa đọc
                     </span>
                   )}
                 </div>
 
-                {unreadCount > 0 && (
+                {/* More options menu (...) */}
+                <div style={{ position: 'relative' }}>
                   <button
-                    onClick={handleMarkAllAsRead}
-                    className="btn btn-secondary"
+                    type="button"
+                    onClick={() => setShowOptions((prev) => !prev)}
                     style={{
-                      fontSize: '0.6875rem',
-                      padding: '4px 8px',
-                      display: 'inline-flex',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      border: 'none',
+                      background: showOptions ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.06)',
+                      color: 'var(--text-muted)',
+                      display: 'flex',
                       alignItems: 'center',
-                      gap: '4px',
-                      borderRadius: '8px',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
                     }}
-                    title="Đánh dấu tất cả là đã đọc"
+                    title="Tùy chọn thông báo"
+                    aria-label="Tùy chọn thông báo"
                   >
-                    <CheckCheck size={13} /> Đã đọc hết
+                    <MoreHorizontal size={18} />
                   </button>
-                )}
+
+                  {showOptions && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 6px)',
+                        right: 0,
+                        width: '210px',
+                        background: 'var(--bg-modal)',
+                        border: '1px solid var(--border-modal)',
+                        borderRadius: '12px',
+                        boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
+                        zIndex: 120,
+                        padding: '6px',
+                        animation: 'fadeIn 0.15s ease',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={handleMarkAllAsRead}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--text-main)',
+                          fontSize: '0.8125rem',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <CheckCheck size={16} color="var(--accent-blue)" /> Đánh dấu đã đọc hết
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleClearAll}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--accent-rose)',
+                          fontSize: '0.8125rem',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(244, 63, 94, 0.12)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <Trash2 size={16} /> Xóa tất cả thông báo
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Tabs: Tất cả / Chưa đọc */}
+              {/* Tabs: Tất cả / Chưa đọc dạng pill Facebook */}
               <div
                 style={{
                   display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '0 1rem 0.75rem',
                   borderBottom: '1px solid var(--border-color)',
-                  background: 'rgba(0, 0, 0, 0.1)',
-                  padding: '4px 8px',
-                  gap: '6px',
                 }}
               >
                 <button
                   type="button"
                   onClick={() => setFilterTab('all')}
                   style={{
-                    flex: 1,
-                    padding: '6px 0',
-                    fontSize: '0.75rem',
+                    padding: '6px 14px',
+                    fontSize: '0.8125rem',
                     fontWeight: 600,
-                    borderRadius: '8px',
+                    borderRadius: '9999px',
                     border: 'none',
                     cursor: 'pointer',
-                    background: filterTab === 'all' ? 'var(--bg-surface)' : 'transparent',
-                    color: filterTab === 'all' ? 'var(--text-main)' : 'var(--text-dim)',
+                    background: filterTab === 'all' ? 'var(--accent-blue)' : 'rgba(255, 255, 255, 0.08)',
+                    color: filterTab === 'all' ? '#ffffff' : 'var(--text-muted)',
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  Tất cả ({notifications.length})
+                  Tất cả
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterTab('unread')}
                   style={{
-                    flex: 1,
-                    padding: '6px 0',
-                    fontSize: '0.75rem',
+                    padding: '6px 14px',
+                    fontSize: '0.8125rem',
                     fontWeight: 600,
-                    borderRadius: '8px',
+                    borderRadius: '9999px',
                     border: 'none',
                     cursor: 'pointer',
-                    background: filterTab === 'unread' ? 'var(--bg-surface)' : 'transparent',
-                    color: filterTab === 'unread' ? 'var(--accent-rose)' : 'var(--text-dim)',
+                    background: filterTab === 'unread' ? 'var(--accent-blue)' : 'rgba(255, 255, 255, 0.08)',
+                    color: filterTab === 'unread' ? '#ffffff' : 'var(--text-muted)',
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  Chưa đọc ({unreadCount})
+                  Chưa đọc{unreadCount > 0 ? ` (${unreadCount})` : ''}
                 </button>
               </div>
 
-              {/* Notification list */}
-              <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
+              {/* Notification list grouped by time: Mới, Hôm nay, Trước đó */}
+              <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
                 {displayedNotifications.length === 0 ? (
                   <div
                     style={{
@@ -461,101 +599,176 @@ export const Navbar: React.FC<NavbarProps> = ({
                       : 'Chưa có thông báo nào phát sinh.'}
                   </div>
                 ) : (
-                  displayedNotifications.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => handleMarkAsRead(item)}
-                      style={{
-                        padding: '0.875rem 1rem',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '0.75rem',
-                        cursor: 'pointer',
-                        background: item.read ? 'transparent' : 'rgba(59, 130, 246, 0.05)',
-                        transition: 'background 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)')}
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = item.read
-                          ? 'transparent'
-                          : 'rgba(59, 130, 246, 0.05)')
-                      }
-                    >
-                      {renderNotificationIcon(item.type)}
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
+                  getNotificationGroups(displayedNotifications).map((group) => (
+                    <div key={group.id} style={{ marginBottom: '4px' }}>
+                      {/* Tiêu đề nhóm thời gian: Mới / Hôm nay / Trước đó */}
+                      <div
+                        style={{
+                          padding: '0.75rem 1rem 0.35rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <span
                           style={{
+                            fontSize: '0.9375rem',
+                            fontWeight: 700,
+                            color: 'var(--text-main)',
+                            letterSpacing: '-0.01em',
+                          }}
+                        >
+                          {group.title}
+                        </span>
+                        <span style={{ fontSize: '0.6875rem', color: 'var(--text-dim)' }}>
+                          {group.items.length} thông báo
+                        </span>
+                      </div>
+
+                      {/* Danh sách thông báo trong nhóm */}
+                      {group.items.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleMarkAsRead(item)}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'space-between',
-                            marginBottom: '2px',
+                            gap: '0.75rem',
+                            cursor: 'pointer',
+                            background: item.read ? 'transparent' : 'rgba(59, 130, 246, 0.05)',
+                            position: 'relative',
+                            transition: 'background 0.15s ease',
                           }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background = item.read
+                              ? 'transparent'
+                              : 'rgba(59, 130, 246, 0.05)')
+                          }
                         >
-                          <span
-                            style={{
-                              fontSize: '0.8125rem',
-                              fontWeight: item.read ? 600 : 700,
-                              color: item.read ? 'var(--text-muted)' : 'var(--text-main)',
-                              lineHeight: 1.3,
-                            }}
-                          >
-                            {item.title}
-                          </span>
-                          {!item.read && (
-                            <span
-                              style={{
-                                width: '7px',
-                                height: '7px',
-                                borderRadius: '50%',
-                                background: 'var(--accent-blue)',
-                                flexShrink: 0,
-                                marginLeft: '6px',
-                              }}
-                            />
-                          )}
-                        </div>
+                          {renderNotificationIcon(item.type)}
 
-                        <p
-                          style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--text-muted)',
-                            margin: '0 0 4px 0',
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {item.message}
-                        </p>
-
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            fontSize: '0.6875rem',
-                            color: 'var(--text-dim)',
-                          }}
-                        >
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <Clock size={11} />
-                            {formatTimeAgo(item.createdAt)}
-                          </span>
-                          {item.vehiclePlate && (
-                            <span
-                              className="mono"
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
                               style={{
-                                background: 'rgba(255, 255, 255, 0.07)',
-                                padding: '1px 5px',
-                                borderRadius: '4px',
-                                color: 'var(--accent-cyan)',
+                                fontSize: '0.8125rem',
+                                fontWeight: item.read ? 500 : 700,
+                                color: item.read ? 'var(--text-muted)' : 'var(--text-main)',
+                                lineHeight: 1.35,
+                                marginBottom: '2px',
                               }}
                             >
-                              {item.vehiclePlate}
-                            </span>
-                          )}
+                              {item.title}
+                            </div>
+
+                            <p
+                              style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--text-dim)',
+                                margin: '0 0 4px 0',
+                                lineHeight: 1.35,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {item.message}
+                            </p>
+
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                fontSize: '0.75rem',
+                              }}
+                            >
+                              <span
+                                style={{
+                                  color: 'var(--accent-blue)',
+                                  fontWeight: 600,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                }}
+                              >
+                                {formatTimeAgo(item.createdAt)}
+                              </span>
+
+                              {item.vehiclePlate && (
+                                <span
+                                  className="mono"
+                                  style={{
+                                    fontSize: '0.6875rem',
+                                    background: 'rgba(255, 255, 255, 0.07)',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    color: 'var(--accent-cyan)',
+                                  }}
+                                >
+                                  {item.vehiclePlate}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action bên phải: Dấu chấm chưa đọc & Nút Xóa thông báo */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {!item.read && (
+                              <span
+                                style={{
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%',
+                                  background: 'var(--accent-blue)',
+                                  boxShadow: '0 0 6px rgba(59, 130, 246, 0.8)',
+                                }}
+                                title="Chưa đọc"
+                              />
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteNotification(item.id, e)}
+                              title="Xóa thông báo này"
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '6px',
+                                border: 'none',
+                                background: 'transparent',
+                                color: 'var(--text-dim)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifySelf: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = 'var(--accent-rose)';
+                                e.currentTarget.style.background = 'rgba(244, 63, 94, 0.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = 'var(--text-dim)';
+                                e.currentTarget.style.background = 'transparent';
+                              }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   ))
                 )}
